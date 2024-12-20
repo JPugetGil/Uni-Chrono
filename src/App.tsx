@@ -4,7 +4,7 @@ import { fetchAllEtablissementsData, fetchIsochroneData } from './dataGouvFetche
 import { useEffect, useState, Fragment } from 'react';
 
 function App() {
-  const [timeInSecond, setTimeInSecond] = useState<number>(600);
+  const [timeInMinutes, setTimeInMinutes] = useState<number>(5);
   const [transportMode, setTransportMode] = useState<'pedestrian' | 'car'>('pedestrian');
 
   // Etablissements GeoJSON data
@@ -31,7 +31,7 @@ function App() {
 
     const fetchData = async () => {
       etablissementsGeoJSON?.forEach(async (etablissement: any) => {
-        const isochrone = await fetchIsochroneData(etablissement.coordonnees.lat, etablissement.coordonnees.lon, timeInSecond, transportMode, signal);
+        const isochrone = await fetchIsochroneData(etablissement.coordonnees.lat, etablissement.coordonnees.lon, timeInMinutes * 60, transportMode, signal);
         isochrone.color = etablissement.color;
         setIsochrones((prevIsochrones: any) => [...(prevIsochrones || []), isochrone]);
       });
@@ -39,7 +39,7 @@ function App() {
 
     fetchData()
       .catch(console.error);
-  }, [etablissementsGeoJSON, timeInSecond, transportMode])
+  }, [etablissementsGeoJSON, timeInMinutes, transportMode])
 
   return (
     <Fragment>
@@ -48,16 +48,15 @@ function App() {
           <h1>Universities or schools in France</h1>
           <p>Displaying isochrones of universities and schools in France</p>
         </header>
-        <label>Time in second: </label>
+        <label>Time in minutes:</label>
         <input
           type="number"
-          min="600"
-          max="1800"
-          step="60"
-          value={timeInSecond}
-          onChange={(e) => setTimeInSecond(parseInt(e.target.value))}
+          min="1"
+          max="60"
+          value={timeInMinutes}
+          onChange={(e) => setTimeInMinutes(parseInt(e.target.value))}
         />
-        <label>Transport mode: </label>
+        <label>Transport mode:</label>
         <select
           value={transportMode}
           onChange={(e) => setTransportMode(e.target.value as 'pedestrian' | 'car')}
@@ -69,7 +68,7 @@ function App() {
       <MapContainer
         center={[46.603354, 1.888334]}
         zoom={6}
-        style={{ height: "85vh", width: "100vw" }}
+        style={{ flexGrow: 1 }}
       >
         {
           etablissementsGeoJSON && etablissementsGeoJSON
