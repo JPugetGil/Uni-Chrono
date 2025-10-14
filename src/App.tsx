@@ -30,11 +30,20 @@ function App() {
     const signal = cont.signal;
 
     const fetchData = async () => {
-      etablissementsGeoJSON?.forEach(async (etablissement: any) => {
-        const isochrone = await fetchIsochroneData(etablissement.coordonnees.lat, etablissement.coordonnees.lon, timeInMinutes * 60, transportMode, signal);
-        isochrone.color = etablissement.color;
-        setIsochrones((prevIsochrones: any) => [...(prevIsochrones || []), isochrone]);
-      });
+      if (!etablissementsGeoJSON) return
+
+      for (const etablissement of etablissementsGeoJSON) {
+        if (signal.aborted) break
+        try {
+          const isochrone = await fetchIsochroneData(etablissement.coordonnees.lat, etablissement.coordonnees.lon, timeInMinutes * 60, transportMode, signal);
+          if (!isochrone) continue
+          isochrone.color = etablissement.color;
+          setIsochrones((prevIsochrones: any) => [...(prevIsochrones || []), isochrone]);
+        } catch (err) {
+          // ignore individual fetch errors (including abort)
+          console.error(err)
+        }
+      }
     };
 
     fetchData()
