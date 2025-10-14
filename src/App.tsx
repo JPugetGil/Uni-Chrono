@@ -41,7 +41,7 @@ function App() {
           setIsochrones((prevIsochrones: any) => [...(prevIsochrones || []), isochrone]);
         } catch (err) {
           // ignore individual fetch errors (including abort)
-          console.error(err)
+          // console.error(err)
         }
       }
     };
@@ -50,12 +50,21 @@ function App() {
       .catch(console.error);
   }, [etablissementsGeoJSON, timeInMinutes, transportMode])
 
+  // Compute percentage of resolved isochrones
+  const total = etablissementsGeoJSON?.length || 0;
+  const resolved = isochrones?.length || 0;
+  const percent = total > 0 ? Math.round((resolved / total) * 100) : 0;
+
   return (
     <Fragment>
       <div className="App">
         <header className="App-header">
           <h1>Universities or schools in France</h1>
-          <p>Displaying isochrones of universities and schools in France</p>
+          <p>Displaying isochrones of universities and schools in France. {total > 0 && (
+              <span>
+                Isochrones resolved: {resolved} / {total} ({percent}%)
+              </span>
+            )}</p>
         </header>
         <label>Time in minutes:</label>
         <input
