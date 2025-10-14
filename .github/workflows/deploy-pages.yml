@@ -22,6 +22,8 @@ jobs:
 
       - name: Build project
         run: npm run build
+        env:
+          VITE_MAPBOX_API_KEY: ${{ secrets.VITE_MAPBOX_API_KEY }}
 
       - name: Upload static files as artifact
         id: deployment
@@ -42,5 +44,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-        env:
-          VITE_MAPBOX_API_KEY: ${{ secrets.VITE_MAPBOX_API_KEY }}
