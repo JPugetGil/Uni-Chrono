@@ -6,6 +6,8 @@ import { useEffect, useState, Fragment } from 'react';
 import ProgressBar from './components/ProgressBar';
 import TimeSelector from './components/TimeSelector';
 import TransportModeSelector from './components/TransportModeSelector';
+import Card from './design-system/Card';
+import Typography from './design-system/Typography';
 
 
 function App() {
@@ -64,18 +66,28 @@ function App() {
 
   return (
     <Fragment>
-      <div className="App">
-        <header>
-          <h1>Universities or schools in France</h1>
-          <div style={{ width: "100%", maxWidth: 480, margin: "1em auto" }}>
-            <p>Displaying isochrones of universities and schools in France.</p>
-            {total > 0 && (
-              <ProgressBar percent={percent} resolved={resolved} total={total} />
-            )}
+      <div>
+        <Card>
+          <div style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'stretch', flexWrap: 'wrap' }}>
+            {/* Left column: title and description */}
+            <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <Typography variant="h1">Universities or schools in France</Typography>
+              <Typography variant="body">Displaying isochrones of universities and schools in France.</Typography>
+            </div>
+            {/* Right column: progress bar and configuration */}
+            <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
+              <div style={{ marginBottom: 8 }}>
+                {total > 0 && (
+                  <ProgressBar percent={percent} resolved={resolved} total={total} />
+                )}
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+                <TimeSelector value={timeInMinutes} onChange={setTimeInMinutes} />
+                <TransportModeSelector value={transportMode} onChange={v => setTransportMode(v as typeof transportMode)} />
+              </div>
+            </div>
           </div>
-        </header>
-        <TimeSelector value={timeInMinutes} onChange={setTimeInMinutes} />
-        <TransportModeSelector value={transportMode} onChange={v => setTransportMode(v as typeof transportMode)} />
+        </Card>
       </div>
       <MapContainer
         center={[46.603354, 1.888334]}
