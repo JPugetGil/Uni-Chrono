@@ -3,7 +3,9 @@ import './App.css'
 import { fetchAllEtablissementsData } from './dataGouvFetcher';
 import { fetchIsochroneData } from './mapboxFetcher';
 import { useEffect, useState, Fragment } from 'react';
-import ProgressBar from './ProgressBar';
+import ProgressBar from './components/ProgressBar';
+import TimeSelector from './components/TimeSelector';
+import TransportModeSelector from './components/TransportModeSelector';
 
 
 function App() {
@@ -72,24 +74,8 @@ function App() {
             )}
           </div>
         </header>
-        <label>Time in minutes:</label>
-        <input
-          type="number"
-          min="1"
-          max="60"
-          value={timeInMinutes}
-          onChange={(e) => setTimeInMinutes(parseInt(e.target.value))}
-        />
-        <label>Transport mode:</label>
-        <select
-          value={transportMode}
-          onChange={(e) => setTransportMode(e.target.value as 'walking' | 'cycling' | 'driving-traffic' | 'driving')}
-        >
-          <option value="driving">Driving</option>
-          <option value="walking">Walking</option>
-          <option value="cycling">Cycling</option>
-          <option value="driving-traffic">Driving (Traffic)</option>
-        </select>
+        <TimeSelector value={timeInMinutes} onChange={setTimeInMinutes} />
+        <TransportModeSelector value={transportMode} onChange={v => setTransportMode(v as typeof transportMode)} />
       </div>
       <MapContainer
         center={[46.603354, 1.888334]}
