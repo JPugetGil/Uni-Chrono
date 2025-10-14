@@ -1,5 +1,5 @@
 import React from 'react';
-import { colors, fontSizes, radii, spacing } from '../design-system/tokens';
+import { colors, fontSizes } from '../design-system/tokens';
 
 interface TypographyProps {
   variant?: 'h1' | 'h2' | 'h3' | 'body' | 'caption';
