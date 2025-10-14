@@ -3,6 +3,7 @@ import './App.css'
 import { fetchAllEtablissementsData } from './dataGouvFetcher';
 import { fetchIsochroneData } from './mapboxFetcher';
 import { useEffect, useState, Fragment } from 'react';
+import ProgressBar from './ProgressBar';
 
 
 function App() {
@@ -62,15 +63,14 @@ function App() {
   return (
     <Fragment>
       <div className="App">
-        <header className="App-header">
+        <header>
           <h1>Universities or schools in France</h1>
-          <p>Displaying isochrones of universities and schools in France. {total > 0 && (
-            <span>
-              {resolved === total
-                ? "All isochrones resolved!"
-                : `Isochrones resolved: ${resolved} / ${total} (${percent}%)`}
-            </span>
-          )}</p>
+          <div style={{ width: "100%", maxWidth: 480, margin: "1em auto" }}>
+            <p>Displaying isochrones of universities and schools in France.</p>
+            {total > 0 && (
+              <ProgressBar percent={percent} resolved={resolved} total={total} />
+            )}
+          </div>
         </header>
         <label>Time in minutes:</label>
         <input
