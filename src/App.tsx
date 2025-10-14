@@ -1,11 +1,12 @@
 import { MapContainer, TileLayer, Polygon, Marker } from "react-leaflet";
 import './App.css'
-import { fetchAllEtablissementsData, fetchIsochroneData } from './dataGouvFetcher';
+import { fetchAllEtablissementsData } from './dataGouvFetcher';
+import { fetchIsochroneData } from './mapboxFetcher';
 import { useEffect, useState, Fragment } from 'react';
 
 function App() {
-  const [timeInMinutes, setTimeInMinutes] = useState<number>(5);
-  const [transportMode, setTransportMode] = useState<'pedestrian' | 'car'>('pedestrian');
+  const [timeInMinutes, setTimeInMinutes] = useState<number>(15);
+  const [transportMode, setTransportMode] = useState<'walking' | 'cycling' | 'driving-traffic' | 'driving'>('walking');
 
   // Etablissements GeoJSON data
   const [etablissementsGeoJSON, setEtablissementsGeoJSON] = useState<any>();
@@ -61,10 +62,12 @@ function App() {
         <header className="App-header">
           <h1>Universities or schools in France</h1>
           <p>Displaying isochrones of universities and schools in France. {total > 0 && (
-              <span>
-                Isochrones resolved: {resolved} / {total} ({percent}%)
-              </span>
-            )}</p>
+            <span>
+              {resolved === total
+                ? "All isochrones resolved!"
+                : `Isochrones resolved: ${resolved} / ${total} (${percent}%)`}
+            </span>
+          )}</p>
         </header>
         <label>Time in minutes:</label>
         <input
@@ -77,10 +80,12 @@ function App() {
         <label>Transport mode:</label>
         <select
           value={transportMode}
-          onChange={(e) => setTransportMode(e.target.value as 'pedestrian' | 'car')}
+          onChange={(e) => setTransportMode(e.target.value as 'walking' | 'cycling' | 'driving-traffic' | 'driving')}
         >
-          <option value="car">Car</option>
-          <option value="pedestrian">Pedestrian</option>
+          <option value="driving">Driving</option>
+          <option value="walking">Walking</option>
+          <option value="cycling">Cycling</option>
+          <option value="driving-traffic">Driving (Traffic)</option>
         </select>
       </div>
       <MapContainer
