@@ -4,6 +4,7 @@ import { fetchAllEtablissementsData } from './dataGouvFetcher';
 import { fetchIsochroneData } from './mapboxFetcher';
 import { useEffect, useState, Fragment } from 'react';
 
+
 function App() {
   const [timeInMinutes, setTimeInMinutes] = useState<number>(15);
   const [transportMode, setTransportMode] = useState<'walking' | 'cycling' | 'driving-traffic' | 'driving'>('walking');
@@ -12,6 +13,8 @@ function App() {
   const [etablissementsGeoJSON, setEtablissementsGeoJSON] = useState<any>();
   const [isochrones, setIsochrones] = useState<any>();
   const [controller, setController] = useState(new AbortController());
+  // Track which marker is hovered (by index)
+  const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -96,12 +99,27 @@ function App() {
         {
           etablissementsGeoJSON && etablissementsGeoJSON
             .map((etablissement: any, index: number) =>
-              <Marker key={index} position={etablissement.coordonnees} title={etablissement.uo_lib} alt={etablissement.uo_lib} />
+              <Marker
+                key={index}
+                position={etablissement.coordonnees}
+                title={etablissement.uo_lib}
+                alt={etablissement.uo_lib}
+                eventHandlers={{
+                  mouseover: () => setHoveredMarkerIndex(index),
+                  mouseout: () => setHoveredMarkerIndex(null),
+                }}
+              />
             )
         }
         {
           isochrones && isochrones
-            .filter((isochrone: any) => isochrone)
+            .filter((_: any, index: number) => {
+              // If hovering, only show the linked isochrone
+              if (hoveredMarkerIndex !== null) {
+                return index === hoveredMarkerIndex;
+              }
+              return true;
+            })
             .map((isochrone: any, index: number) =>
               <Polygon key={index} positions={isochrone} color={isochrone.color} />
             )
