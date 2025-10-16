@@ -1,4 +1,3 @@
-import React from 'react';
 import { colors, radii, spacing, shadows } from '../design-system/tokens';
 
 interface CardProps {

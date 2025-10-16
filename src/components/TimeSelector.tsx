@@ -1,4 +1,4 @@
-import React from 'react';
+import NumberInput from '../design-system/NumberInput';
 
 interface TimeSelectorProps {
   value: number;
@@ -6,17 +6,14 @@ interface TimeSelectorProps {
 }
 
 const TimeSelector: React.FC<TimeSelectorProps> = ({ value, onChange }) => (
-  <div style={{ marginBottom: 8 }}>
-    <label>Time in minutes:</label>
-    <input
-      type="number"
-      min="1"
-      max="60"
-      value={value}
-      onChange={e => onChange(parseInt(e.target.value))}
-      style={{ marginLeft: 8 }}
-    />
-  </div>
+  <NumberInput
+    label="Time in minutes"
+    min={1}
+    max={60}
+    value={value}
+    onChange={(e) => onChange(parseInt(e.target.value))}
+    compact
+  />
 );
 
 export default TimeSelector;

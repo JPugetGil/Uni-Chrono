@@ -1,4 +1,3 @@
-import React from 'react';
 import { colors, spacing, radii } from '../design-system/tokens';
 
 interface SurfaceProps {

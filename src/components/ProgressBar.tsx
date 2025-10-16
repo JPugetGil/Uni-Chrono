@@ -1,5 +1,3 @@
-import React from 'react';
-
 interface ProgressBarProps {
   percent: number;
   resolved: number;
@@ -30,6 +28,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, resolved, total }) =
           color: '#222',
           fontWeight: 500,
           fontSize: 11,
+          whiteSpace: 'nowrap',
         }}>
           {resolved === total ? 'All isochrones resolved!' : `Isochrones resolved: ${resolved} / ${total} (${percent}%)`}
         </span>

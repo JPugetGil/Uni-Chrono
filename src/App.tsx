@@ -8,56 +8,140 @@ import TimeSelector from './components/TimeSelector';
 import TransportModeSelector from './components/TransportModeSelector';
 import Card from './design-system/Card';
 import Typography from './design-system/Typography';
+import { Isochrone } from './types/isochrone';
+import { Etablissement } from './types/etablissement';
 
+import LocalStorageCache from './LocalStorageCache';
 
 function App() {
-  const [timeInMinutes, setTimeInMinutes] = useState<number>(15);
-  const [transportMode, setTransportMode] = useState<'walking' | 'cycling' | 'driving-traffic' | 'driving'>('walking');
+  // TTL par défaut pour le cache: 24 heures
+  const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
 
-  // Etablissements GeoJSON data
-  const [etablissementsGeoJSON, setEtablissementsGeoJSON] = useState<any>();
-  const [isochrones, setIsochrones] = useState<any>();
+  const [timeInMinutes, setTimeInMinutes] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('timeInMinutes');
+      const n = saved ? Number(saved) : NaN;
+      return Number.isFinite(n) && n > 0 ? n : 15;
+    } catch {
+      return 15;
+    }
+  });
+  const [transportMode, setTransportMode] = useState<'walking' | 'cycling' | 'driving-traffic' | 'driving'>(() => {
+    try {
+      const saved = localStorage.getItem('transportMode');
+      const allowed = new Set(['walking', 'cycling', 'driving-traffic', 'driving']);
+      return saved && allowed.has(saved) ? (saved as 'walking' | 'cycling' | 'driving-traffic' | 'driving') : 'walking';
+    } catch {
+      return 'walking';
+    }
+  });
+
+  const [loadedFromCache, setLoadedFromCache] = useState<boolean>(false);
+  const [cacheTimestampTitle, setCacheTimestampTitle] = useState<string>('');
+
+  // Initialisation depuis le cache localStorage si disponible
+  const [etablissementsGeoJSON, setEtablissementsGeoJSON] = useState<Etablissement[] | undefined>(() => {
+    const cached = LocalStorageCache.loadEtablissements();
+    return cached || undefined;
+  });
+  // Clé de cache isochrones dépendante du mode et du temps
+  const cacheKey = `${transportMode}:${timeInMinutes}`;
+  const [isochrones, setIsochrones] = useState<Isochrone[]>(() => {
+    const cached = LocalStorageCache.loadIsochrones(cacheKey);
+    return cached || [];
+  });
   const [controller, setController] = useState(new AbortController());
   // Track which marker is hovered (by index)
   const [hoveredMarkerIndex, setHoveredMarkerIndex] = useState<number | null>(null);
 
   useEffect(() => {
+    // Si déjà en cache, ne pas refetch
+    if (etablissementsGeoJSON && etablissementsGeoJSON.length > 0) return;
     const fetchData = async () => {
+      const cachedEntry = LocalStorageCache.loadEtablissementsEntry(DEFAULT_TTL_MS);
+      if (cachedEntry && cachedEntry.data.length > 0) {
+        setEtablissementsGeoJSON(cachedEntry.data);
+        setLoadedFromCache(true);
+        setCacheTimestampTitle(`Étab. mis en cache: ${new Date(cachedEntry.ts).toLocaleString()}`);
+        return;
+      }
       const data = await fetchAllEtablissementsData();
       setEtablissementsGeoJSON(data);
+      LocalStorageCache.saveEtablissements(data);
+      setLoadedFromCache(false);
     };
+    fetchData().catch(console.error);
+  });
 
-    fetchData()
-      .catch(console.error);
-  }, [])
+  // Persister les préférences utilisateur (temps et mode) dans le localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('timeInMinutes', String(timeInMinutes));
+    } catch {
+      // ignore
+    }
+  }, [timeInMinutes]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('transportMode', transportMode);
+    } catch {
+      // ignore
+    }
+  }, [transportMode]);
 
   useEffect(() => {
     controller.abort();
+
+    // D'abord essayer de charger depuis le cache pour cette config (mode+temps)
+    const cachedEntry = LocalStorageCache.loadIsochronesEntry(cacheKey, DEFAULT_TTL_MS);
+    if (cachedEntry && cachedEntry.data.length > 0) {
+      setIsochrones(cachedEntry.data);
+      setLoadedFromCache(true);
+      setCacheTimestampTitle(`Isochrones mis en cache: ${new Date(cachedEntry.ts).toLocaleString()}`);
+      return; // Pas besoin de refetch
+    }
+
+    // Pas de cache: reset l'état et le cache puis fetch
     setIsochrones([]);
+    LocalStorageCache.saveIsochrones([], cacheKey);
     const cont = new AbortController();
     setController(cont);
     const signal = cont.signal;
 
     const fetchData = async () => {
-      if (!etablissementsGeoJSON) return
+      if (!etablissementsGeoJSON) return;
 
       for (const etablissement of etablissementsGeoJSON) {
-        if (signal.aborted) break
+        if (signal.aborted) break;
         try {
-          const isochrone = await fetchIsochroneData(etablissement.coordonnees.lat, etablissement.coordonnees.lon, timeInMinutes * 60, transportMode, signal);
-          if (!isochrone) continue
-          isochrone.color = etablissement.color;
-          setIsochrones((prevIsochrones: any) => [...(prevIsochrones || []), isochrone]);
-        } catch (err) {
+          const coordinates = await fetchIsochroneData(
+            etablissement.coordonnees.lat,
+            etablissement.coordonnees.lon,
+            timeInMinutes * 60,
+            transportMode,
+            signal
+          );
+          if (!coordinates || coordinates.length === 0) continue;
+          const isochrone: Isochrone = {
+            coordinates,
+            color: etablissement.color || '#000000',
+          };
+          setIsochrones((prevIsochrones) => {
+            const updated = [...prevIsochrones, isochrone];
+            LocalStorageCache.saveIsochrones(updated, cacheKey);
+            return updated;
+          });
+        } catch {
           // ignore individual fetch errors (including abort)
-          // console.error(err)
         }
       }
+      setLoadedFromCache(false);
     };
 
-    fetchData()
-      .catch(console.error);
-  }, [etablissementsGeoJSON, timeInMinutes, transportMode])
+    fetchData().catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [etablissementsGeoJSON, timeInMinutes, transportMode]);
 
   // Compute percentage of resolved isochrones
   const total = etablissementsGeoJSON?.length || 0;
@@ -76,12 +160,17 @@ function App() {
             </div>
             {/* Right column: progress bar and configuration */}
             <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
-              <div style={{ marginBottom: 8 }}>
+              <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
                 {total > 0 && (
                   <ProgressBar percent={percent} resolved={resolved} total={total} />
                 )}
+                {loadedFromCache && (
+                  <span title={cacheTimestampTitle} style={{ marginLeft: 12, padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    Loaded from cache
+                  </span>
+                )}
               </div>
-              <div style={{ display: 'flex', flexDirection: 'row', gap: 16, alignItems: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'row', gap: 4, alignItems: 'center' }}>
                 <TimeSelector value={timeInMinutes} onChange={setTimeInMinutes} />
                 <TransportModeSelector value={transportMode} onChange={v => setTransportMode(v as typeof transportMode)} />
               </div>
@@ -96,10 +185,10 @@ function App() {
       >
         {
           etablissementsGeoJSON && etablissementsGeoJSON
-            .map((etablissement: any, index: number) =>
+            .map((etablissement, index: number) =>
               <Marker
                 key={index}
-                position={etablissement.coordonnees}
+                position={[etablissement.coordonnees.lat, etablissement.coordonnees.lon]}
                 title={etablissement.uo_lib}
                 alt={etablissement.uo_lib}
                 eventHandlers={{
@@ -111,15 +200,15 @@ function App() {
         }
         {
           isochrones && isochrones
-            .filter((_: any, index: number) => {
+            .filter((_isochrone, index: number) => {
               // If hovering, only show the linked isochrone
               if (hoveredMarkerIndex !== null) {
                 return index === hoveredMarkerIndex;
               }
               return true;
             })
-            .map((isochrone: any, index: number) =>
-              <Polygon key={index} positions={isochrone} color={isochrone.color} />
+            .map((isochrone: Isochrone, index: number) =>
+              <Polygon key={index} positions={isochrone.coordinates} color={isochrone.color} />
             )
         }
         <TileLayer

@@ -1,4 +1,3 @@
-import React from 'react';
 import { colors, fontSizes } from '../design-system/tokens';
 
 interface TypographyProps {

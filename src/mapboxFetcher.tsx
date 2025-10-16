@@ -1,3 +1,5 @@
+import { Coordinate } from './types/isochrone';
+
 const mapBoxBaseURL = "https://api.mapbox.com/isochrone/v1/mapbox";
 
 // Simple token-bucket rate limiter to enforce max 5 requests per second
@@ -6,7 +8,7 @@ class RateLimiter {
     private tokens: number
     private refillIntervalMs: number
     private queue: Array<() => void>
-    private refillTimer: any
+    private refillTimer: ReturnType<typeof setInterval>
 
     constructor(maxTokens = 5, refillIntervalMs = 1000) {
         this.maxTokens = maxTokens
@@ -72,7 +74,7 @@ class RateLimiter {
 
 const isochroneRateLimiter = new RateLimiter(20, 1000)
 
-const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Promise<any> => {
+const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Promise<GeoJSON.FeatureCollection<GeoJSON.Polygon>> => {
     let attempt = 0
 
     return new Promise((resolve, reject) => {
@@ -136,12 +138,12 @@ export const fetchIsochroneData = async (
     return formatIsochrone(data)
 }
 
-const formatIsochrone = (isochroneData: any) => {
+const formatIsochrone = (isochroneData: GeoJSON.FeatureCollection<GeoJSON.Polygon>): Coordinate[] => {
     if (!isochroneData || !isochroneData.features || !isochroneData.features.length) {
         return []
     }
     // Return the coordinates of the first polygon (most common use)
     return isochroneData.features[0]?.geometry?.coordinates[0]?.map(
-        (coord: any) => [coord[1], coord[0]]
-    )
+        (coord: number[]) => [coord[1], coord[0]] as Coordinate
+    ) || []
 }
