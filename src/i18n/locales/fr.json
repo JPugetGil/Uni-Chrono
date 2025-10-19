@@ -2,7 +2,9 @@
   "header": {
     "title": "Universités ou écoles en France",
     "description": "Affichage des isochrones des universités et écoles en France.",
-    "loadedFromCache": "Chargé depuis le cache"
+    "loadedFromCache": "Chargé depuis le cache",
+    "showConfig": "Afficher les réglages",
+    "hideConfig": "Masquer les réglages"
   },
   "filters": {
     "type": "Type",

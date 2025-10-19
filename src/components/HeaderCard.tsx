@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Card from '../design-system/Card';
 import Typography from '../design-system/Typography';
@@ -7,6 +8,7 @@ import TransportModeSelector from './TransportModeSelector';
 import FilterPanel, { Filters } from './FilterPanel';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Etablissement } from '../types/etablissement';
+import Button from '../design-system/Button';
 
 interface HeaderCardProps {
   total: number;
@@ -40,17 +42,53 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
   onFiltersReset,
 }) => {
   const { t } = useTranslation();
+  const getIsMobile = () => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false);
+  const [isMobile, setIsMobile] = useState<boolean>(getIsMobile);
+  const [configOpen, setConfigOpen] = useState<boolean>(() => !getIsMobile());
+
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 768px)');
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener('change', update);
+    return () => mq.removeEventListener('change', update);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) setConfigOpen(true);
+  }, [isMobile]);
 
   return (
     <Card>
       <div style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'stretch', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+        <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8 }}>
           <Typography variant="h1">{t('header.title')}</Typography>
           <Typography variant="body">{t('header.description')}</Typography>
           <LanguageSwitcher />
+          {isMobile && (
+            <div style={{ marginTop: 8 }}>
+              <Button
+                variant="secondary"
+                compact
+                aria-expanded={configOpen}
+                onClick={() => setConfigOpen((v) => !v)}
+              >
+                {configOpen ? t('header.hideConfig') : t('header.showConfig')}
+              </Button>
+            </div>
+          )}
         </div>
-        <div style={{ flex: 2, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
-          <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
+        <div
+          style={{
+            flex: 2,
+            minWidth: 220,
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            gap: 16,
+          }}
+        >
+          <div style={{ marginBottom: 8, display: isMobile && !configOpen ? 'none' : 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
             {total > 0 && (
               <ProgressBar percent={percent} resolved={resolved} total={total} />
             )}
@@ -60,7 +98,7 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
               </span>
             )}
           </div>
-          <div style={{ display: 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: isMobile && !configOpen ? 'none' : 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <TimeSelector value={timeInMinutes} onChange={onTimeChange} />
             <TransportModeSelector value={transportMode} onChange={(v) => onTransportModeChange(v as typeof transportMode)} />
             <FilterPanel

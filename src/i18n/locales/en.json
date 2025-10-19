@@ -2,7 +2,9 @@
   "header": {
     "title": "Universities or schools in France",
     "description": "Displaying isochrones of universities and schools in France.",
-    "loadedFromCache": "Loaded from cache"
+    "loadedFromCache": "Loaded from cache",
+    "showConfig": "Show settings",
+    "hideConfig": "Hide settings"
   },
   "filters": {
     "type": "Type",
