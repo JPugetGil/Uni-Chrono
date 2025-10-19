@@ -1,9 +1,11 @@
+import { useTranslation } from 'react-i18next';
 import Card from '../design-system/Card';
 import Typography from '../design-system/Typography';
 import ProgressBar from './ProgressBar';
 import TimeSelector from './TimeSelector';
 import TransportModeSelector from './TransportModeSelector';
 import FilterPanel, { Filters } from './FilterPanel';
+import LanguageSwitcher from './LanguageSwitcher';
 import { Etablissement } from '../types/etablissement';
 
 interface HeaderCardProps {
@@ -37,23 +39,24 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
   onFiltersChange,
   onFiltersReset,
 }) => {
+  const { t } = useTranslation();
+
   return (
     <Card>
       <div style={{ display: 'flex', flexDirection: 'row', gap: 32, alignItems: 'stretch', flexWrap: 'wrap' }}>
-        {/* Left column: title and description */}
         <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-          <Typography variant="h1">Universities or schools in France</Typography>
-          <Typography variant="body">Displaying isochrones of universities and schools in France.</Typography>
+          <Typography variant="h1">{t('header.title')}</Typography>
+          <Typography variant="body">{t('header.description')}</Typography>
+          <LanguageSwitcher />
         </div>
-        {/* Right column: progress bar and configuration */}
-        <div style={{ flex: 1, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
+        <div style={{ flex: 2, minWidth: 220, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 16 }}>
           <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'row', alignItems: 'center' }}>
             {total > 0 && (
               <ProgressBar percent={percent} resolved={resolved} total={total} />
             )}
             {loadedFromCache && (
               <span title={cacheTimestampTitle} style={{ marginLeft: 12, padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
-                Loaded from cache
+                {t('header.loadedFromCache')}
               </span>
             )}
           </div>

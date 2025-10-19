@@ -1,0 +1,51 @@
+{
+  "header": {
+    "title": "Universités ou écoles en France",
+    "description": "Affichage des isochrones des universités et écoles en France.",
+    "loadedFromCache": "Chargé depuis le cache"
+  },
+  "filters": {
+    "type": "Type",
+    "all": "Tous",
+    "region": "Région",
+    "allFeminine": "Toutes",
+    "department": "Département",
+    "allMasculine": "Tous",
+    "city": "Ville",
+    "name": "Nom (contient)",
+    "namePlaceholder": "Ex. : Sorbonne",
+    "reset": "Réinitialiser"
+  },
+  "time": {
+    "label": "Temps en minutes"
+  },
+  "transport": {
+    "label": "Mode de transport",
+    "driving": "Voiture",
+    "walking": "Marche",
+    "cycling": "Vélo",
+    "drivingTraffic": "Voiture (Trafic)"
+  },
+  "progress": {
+    "resolved": "Isochrones résolues : {{resolved}} / {{total}} ({{percent}}%)",
+    "allResolved": "Toutes les isochrones sont résolues !"
+  },
+  "details": {
+    "title": "Détails de l'établissement",
+    "close": "Fermer",
+    "uai": "UAI",
+    "type": "Type",
+    "region": "Région",
+    "department": "Département",
+    "city": "Commune",
+    "coordinates": "Coordonnées",
+    "statistics": "Statistiques",
+    "isochrone": "Isochrone",
+    "available": "Disponible",
+    "unavailable": "En cours / indisponible",
+    "points": "Points",
+    "mode": "Mode",
+    "time": "Temps",
+    "minutes": "{{time}} min"
+  }
+}

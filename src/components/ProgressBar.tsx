@@ -1,3 +1,5 @@
+import { useTranslation } from 'react-i18next';
+
 interface ProgressBarProps {
   percent: number;
   resolved: number;
@@ -5,6 +7,8 @@ interface ProgressBarProps {
 }
 
 const ProgressBar: React.FC<ProgressBarProps> = ({ percent, resolved, total }) => {
+  const { t } = useTranslation();
+
   return (
     <div style={{ width: '100%', margin: '8px 0' }}>
       <div style={{
@@ -30,7 +34,7 @@ const ProgressBar: React.FC<ProgressBarProps> = ({ percent, resolved, total }) =
           fontSize: 11,
           whiteSpace: 'nowrap',
         }}>
-          {resolved === total ? 'All isochrones resolved!' : `Isochrones resolved: ${resolved} / ${total} (${percent}%)`}
+          {resolved === total ? t('progress.allResolved') : t('progress.resolved', { resolved, total, percent })}
         </span>
       </div>
     </div>

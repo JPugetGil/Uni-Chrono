@@ -2,6 +2,8 @@
 
 Uni-Chrono is a web application for visualizing isochrones for higher-education institutions in France. It displays universities/schools on a map, and for each one a polygon representing the area reachable in X minutes for a given mode of transport.
 
+**🌍 Available in French and English** - The application supports internationalization (i18n) with language switching between French and English.
+
 ### What the application does
 
 - Fetches the list of higher-education institutions (France) from the MESR open data platform.
@@ -11,8 +13,9 @@ Uni-Chrono is a web application for visualizing isochrones for higher-education 
   - the mode of transport (walking, cycling, driving).
 - Updates the map live when you change the time or transport mode.
 - Shows a progress bar indicating how many isochrones have been computed out of the total.
-- Caches institutions and isochrones in local storage (localStorage) to speed up subsequent loads.
+- Caches institutions and isochrones in local storage (localStorage) to speed up subsequent loads. (1 hour expiration)
 - Provides a filter panel to search institutions by name, type, region, department, or commune.
+- **Supports language switching (FR/EN)** with automatic browser language detection and localStorage persistence.
 
 ### Data and services used
 

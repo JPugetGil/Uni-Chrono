@@ -4,7 +4,7 @@ import { Etablissement } from '../types/etablissement';
 import { fetchIsochroneData } from '../mapboxFetcher';
 import LocalStorageCache from '../LocalStorageCache';
 
-const DEFAULT_TTL_MS = 24 * 60 * 60 * 1000;
+const DEFAULT_TTL_MS = 60 * 60 * 1000;
 
 export const useIsochrones = (
   etablissementsGeoJSON: Etablissement[] | undefined,

@@ -7,9 +7,11 @@ import { Filters } from './components/FilterPanel';
 import { useEtablissements } from './hooks/useEtablissements';
 import { useIsochrones } from './hooks/useIsochrones';
 import { useUserPreferences } from './hooks/useUserPreferences';
+import { useDocumentTitle } from './hooks/useDocumentTitle';
 
 function App() {
-  // Custom hooks for user preferences, etablissements and isochrones
+  useDocumentTitle();
+
   const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences();
   const { etablissementsGeoJSON, loadedFromCache: etabFromCache, cacheTimestampTitle: etabCacheTitle } = useEtablissements();
   const { isochrones, loadedFromCache: isoFromCache, cacheTimestampTitle: isoCacheTitle } = useIsochrones(
@@ -24,12 +26,8 @@ function App() {
   const [selectedEtabId, setSelectedEtabId] = useState<string | null>(null);
   // Filters state
   const [filters, setFilters] = useState<Filters>({});
-
-  // Determine which cache info to show (prioritize isochrones as they're more dynamic)
   const loadedFromCache = isoFromCache || etabFromCache;
   const cacheTimestampTitle = isoFromCache ? isoCacheTitle : etabCacheTitle;
-
-  // Compute percentage of resolved isochrones (based on all vs fetched count)
   const total = etablissementsGeoJSON?.length || 0;
   const resolved = isochrones?.length || 0;
   const percent = total > 0 ? Math.round((resolved / total) * 100) : 0;
