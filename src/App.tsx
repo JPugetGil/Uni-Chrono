@@ -67,8 +67,6 @@ function App() {
         selectedEtabId={selectedEtabId}
         etablissements={etablissementsGeoJSON || []}
         isochrones={isochrones}
-        resolved={resolved}
-        total={total}
         transportMode={transportMode}
         timeInMinutes={timeInMinutes}
         onClose={() => setSelectedEtabId(null)}

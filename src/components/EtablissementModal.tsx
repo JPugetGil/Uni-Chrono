@@ -7,8 +7,6 @@ interface EtablissementModalProps {
   selectedEtabId: string | null;
   etablissements: Etablissement[];
   isochrones: Isochrone[];
-  resolved: number;
-  total: number;
   transportMode: 'walking' | 'cycling' | 'driving-traffic' | 'driving';
   timeInMinutes: number;
   onClose: () => void;
@@ -18,8 +16,6 @@ const EtablissementModal: React.FC<EtablissementModalProps> = ({
   selectedEtabId,
   etablissements,
   isochrones,
-  resolved,
-  total,
   transportMode,
   timeInMinutes,
   onClose,
@@ -59,8 +55,6 @@ const EtablissementModal: React.FC<EtablissementModalProps> = ({
       <EtablissementDetails
         etablissement={etablissement}
         isochrone={isochrone}
-        resolved={resolved}
-        total={total}
         transportMode={transportMode}
         timeInMinutes={timeInMinutes}
         onClose={onClose}

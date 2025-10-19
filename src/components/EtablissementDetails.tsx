@@ -9,8 +9,6 @@ import { useEffect, useState } from 'react';
 interface EtablissementDetailsProps {
   etablissement: Etablissement;
   isochrone?: Isochrone;
-  resolved?: number;
-  total?: number;
   transportMode?: 'walking' | 'cycling' | 'driving-traffic' | 'driving';
   timeInMinutes?: number;
   onClose?: () => void;
@@ -23,26 +21,14 @@ const Row: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, valu
   </div>
 );
 
-const ExternalLink: React.FC<React.PropsWithChildren<{ href: string }>> = ({ href, children }) => (
-  <a href={href} target="_blank" rel="noreferrer" style={{ color: colors.primary, textDecoration: 'none' }}>
-    {children}
-  </a>
-);
-
 const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   etablissement,
   isochrone,
-  resolved,
-  total,
   transportMode,
   timeInMinutes,
   onClose,
 }) => {
   const { uai, uo_lib, type_d_etablissement, reg_nom, dep_nom, com_nom, coordonnees, color } = etablissement;
-
-  const searchUrl = `https://www.google.com/search?q=${encodeURIComponent(uo_lib || '')}`;
-  const gmapsUrl = `https://www.google.com/maps?q=${coordonnees.lat},${coordonnees.lon}`;
-  const osmUrl = `https://www.openstreetmap.org/?mlat=${coordonnees.lat}&mlon=${coordonnees.lon}#map=16/${coordonnees.lat}/${coordonnees.lon}`;
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -84,15 +70,6 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
           <Row label="Département" value={dep_nom || '—'} />
           <Row label="Commune" value={com_nom || '—'} />
           <Row label="Coordonnées" value={`${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}`} />
-        </div>
-
-        <div style={{ marginTop: spacing.md }}>
-          <Typography variant="h3" style={{ display: 'block', marginBottom: 8 }}>Liens</Typography>
-          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-            <ExternalLink href={gmapsUrl}>Google Maps</ExternalLink>
-            <ExternalLink href={osmUrl}>OpenStreetMap</ExternalLink>
-            <ExternalLink href={searchUrl}>Rechercher</ExternalLink>
-          </div>
         </div>
 
         <div style={{ marginTop: spacing.md }}>
