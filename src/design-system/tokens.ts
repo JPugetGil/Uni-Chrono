@@ -1,4 +1,3 @@
-// Centralized color palette for the app
 export const colors = {
   primary: '#2196f3',
   primaryDark: '#1769aa',

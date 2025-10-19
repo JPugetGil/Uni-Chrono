@@ -1,0 +1,23 @@
+{
+  "name": "Uni-Chrono",
+  "short_name": "Uni-Chrono",
+  "description": "Visualisez les isochrones vers les établissements universitaires.",
+  "display": "standalone",
+  "start_url": "./",
+  "scope": "./",
+  "background_color": "#0b3d91",
+  "theme_color": "#0b3d91",
+  "lang": "fr",
+  "icons": [
+    {
+  "src": "icons/uni-chrono-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+  "src": "icons/uni-chrono-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
