@@ -16,4 +16,9 @@ export interface Isochrone {
    * Color to display the isochrone on the map
    */
   color: string;
+
+  /**
+   * Identifiant pour relier l'isochrone à un établissement (UAI ou fallback)
+   */
+  etablissementId?: string;
 }

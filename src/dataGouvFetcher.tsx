@@ -4,7 +4,7 @@ const dataGouvBaseURL = "https://data.enseignementsup-recherche.gouv.fr"
 
 const etablissements = (offset: number) =>
     dataGouvBaseURL +
-    `/api/explore/v2.1/catalog/datasets/fr-esr-principaux-etablissements-enseignement-superieur/records?order_by=uai&select=coordonnees%2Ctype_d_etablissement%2Cuo_lib&limit=100&offset=${offset}&lang=fr&refine=pays_etranger_acheminement%3A%22France%22`
+    `/api/explore/v2.1/catalog/datasets/fr-esr-principaux-etablissements-enseignement-superieur/records?order_by=uai&select=coordonnees%2Ctype_d_etablissement%2Cuo_lib%2Cuai%2Creg_nom%2Cdep_nom%2Ccom_nom&limit=100&offset=${offset}&lang=fr&refine=pays_etranger_acheminement%3A%22France%22`
 
 const fetchEtablissementsData = async (offset: number): Promise<Etablissements> => {
     const response = await fetch(etablissements(offset))
