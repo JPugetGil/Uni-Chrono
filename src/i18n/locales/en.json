@@ -1,53 +1,57 @@
 {
-  "header": {
-    "title": "Universities or schools in France",
-    "description": "Displaying isochrones of universities and schools in France.",
-    "loadedFromCache": "Loaded from cache",
-    "showConfig": "Show settings",
-    "hideConfig": "Hide settings"
-  },
-  "filters": {
-    "type": "Type",
-    "all": "All",
-    "region": "Region",
-    "allFeminine": "All",
-    "department": "Department",
-    "allMasculine": "All",
-    "city": "City",
-    "name": "Name (contains)",
-    "namePlaceholder": "E.g.: Sorbonne",
-    "reset": "Reset"
-  },
-  "time": {
-    "label": "Time in minutes"
-  },
-  "transport": {
-    "label": "Transport mode",
-    "driving": "Driving",
-    "walking": "Walking",
-    "cycling": "Cycling",
-    "drivingTraffic": "Driving (Traffic)"
-  },
-  "progress": {
-    "resolved": "Isochrones resolved: {{resolved}} / {{total}} ({{percent}}%)",
-    "allResolved": "All isochrones resolved!"
-  },
-  "details": {
-    "title": "Establishment Details",
-    "close": "Close",
-    "uai": "UAI",
-    "type": "Type",
-    "region": "Region",
-    "department": "Department",
-    "city": "City",
-    "coordinates": "Coordinates",
-    "statistics": "Statistics",
-    "isochrone": "Isochrone",
-    "available": "Available",
-    "unavailable": "In progress / unavailable",
-    "points": "Points",
-    "mode": "Mode",
-    "time": "Time",
-    "minutes": "{{time}} min"
-  }
+    "header": {
+        "title": "Universities or schools in France",
+        "description": "Displaying isochrones of universities and schools in France.",
+        "loadedFromCache": "Loaded from cache",
+        "showConfig": "Show settings",
+        "hideConfig": "Hide settings"
+    },
+    "filters": {
+        "type": "Type",
+        "all": "All",
+        "region": "Region",
+        "allFeminine": "All",
+        "department": "Department",
+        "allMasculine": "All",
+        "city": "City",
+        "name": "Name (contains)",
+        "namePlaceholder": "E.g.: Sorbonne",
+        "reset": "Reset"
+    },
+    "time": {
+        "label": "Time in minutes"
+    },
+    "transport": {
+        "label": "Transport mode",
+        "driving": "Driving",
+        "walking": "Walking",
+        "cycling": "Cycling",
+        "drivingTraffic": "Driving (Traffic)"
+    },
+    "progress": {
+        "resolved": "Isochrones resolved: {{resolved}} / {{total}} ({{percent}}%)",
+        "allResolved": "All isochrones resolved!"
+    },
+    "details": {
+        "title": "Establishment Details",
+        "close": "Close",
+        "uai": "UAI",
+        "headquarters": "Headquarters",
+        "implantation": "Campus / Site",
+        "type": "Type",
+        "region": "Region",
+        "department": "Department",
+        "city": "City",
+        "services": "Services",
+        "openingDate": "Opening date",
+        "coordinates": "Coordinates",
+        "statistics": "Statistics",
+        "isochrone": "Isochrone",
+        "available": "Available",
+        "unavailable": "In progress / unavailable",
+        "points": "Points",
+        "mode": "Mode",
+        "time": "Time",
+        "minutes": "{{time}} min"
+    }
 }

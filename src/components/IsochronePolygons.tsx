@@ -1,6 +1,6 @@
 import { Polygon } from 'react-leaflet';
 import { Isochrone } from '../types/isochrone';
-import { Etablissement } from '../types/etablissement';
+import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Filters } from './FilterPanel';
 
 interface IsochronePolygonsProps {
@@ -27,11 +27,14 @@ const IsochronePolygons: React.FC<IsochronePolygonsProps> = ({
     if (!etablissements || !iso.etablissementId) return true;
     const e = etablissements.find(x => (x.uai || `${x.coordonnees.lat},${x.coordonnees.lon}`) === iso.etablissementId);
     if (!e) return false;
-    if (filters.type && !(e.type_d_etablissement || []).includes(filters.type)) return false;
+    if (filters.type && !getEtablissementTypes(e).includes(filters.type)) return false;
     if (filters.region && e.reg_nom !== filters.region) return false;
     if (filters.departement && e.dep_nom !== filters.departement) return false;
     if (filters.commune && e.com_nom !== filters.commune) return false;
-    if (filters.name && !e.uo_lib?.toLowerCase().includes(filters.name.toLowerCase())) return false;
+    if (filters.name) {
+      const label = getEtablissementName(e).toLowerCase();
+      if (!label.includes(filters.name.toLowerCase())) return false;
+    }
     return true;
   });
 

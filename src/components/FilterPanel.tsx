@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import Select from '../design-system/Select';
 import Button from '../design-system/Button';
 import TextInput from '../design-system/TextInput';
-import { Etablissement } from '../types/etablissement';
+import { Etablissement, getEtablissementTypes } from '../types/etablissement';
 
 export type Filters = {
   type?: string;
@@ -19,13 +19,13 @@ interface FilterPanelProps {
   onReset?: () => void;
 }
 
-const uniqueSorted = (arr: (string | undefined)[]) =>
+const uniqueSorted = (arr: (string | null | undefined)[]) =>
   Array.from(new Set(arr.filter(Boolean) as string[])).sort((a, b) => a.localeCompare(b));
 
 const FilterPanel: React.FC<FilterPanelProps> = ({ etablissements, values, onChange, onReset }) => {
   const { t } = useTranslation();
   
-  const types = uniqueSorted((etablissements || []).flatMap(e => e.type_d_etablissement || []));
+  const types = uniqueSorted((etablissements || []).flatMap(e => getEtablissementTypes(e)));
   const regions = uniqueSorted((etablissements || []).map(e => e.reg_nom));
   const deps = uniqueSorted((etablissements || []).map(e => e.dep_nom));
   const communes = uniqueSorted((etablissements || []).map(e => e.com_nom));

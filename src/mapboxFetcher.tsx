@@ -72,7 +72,7 @@ class RateLimiter {
     }
 }
 
-const isochroneRateLimiter = new RateLimiter(20, 1000)
+const isochroneRateLimiter = new RateLimiter(250, 1000)
 
 const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Promise<GeoJSON.FeatureCollection<GeoJSON.Polygon>> => {
     let attempt = 0

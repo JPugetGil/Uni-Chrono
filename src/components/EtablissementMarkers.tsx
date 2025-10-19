@@ -1,5 +1,5 @@
 import { Marker } from 'react-leaflet';
-import { Etablissement } from '../types/etablissement';
+import { Etablissement, getEtablissementName } from '../types/etablissement';
 
 interface EtablissementMarkersProps {
   etablissements: Etablissement[];
@@ -14,22 +14,29 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({
 }) => {
   return (
     <>
-      {etablissements.map((etablissement) => {
-        const etabId = etablissement.uai || `${etablissement.coordonnees.lat},${etablissement.coordonnees.lon}`;
-        return (
-          <Marker
-            key={etabId}
-            position={[etablissement.coordonnees.lat, etablissement.coordonnees.lon]}
-            title={etablissement.uo_lib}
-            alt={etablissement.uo_lib}
-            eventHandlers={{
-              mouseover: () => onHover(etabId),
-              mouseout: () => onHover(null),
-              click: () => onSelect(etabId),
-            }}
-          />
-        );
-      })}
+      {etablissements
+        .filter(etablissement =>
+          etablissement.coordonnees &&
+          etablissement.coordonnees.lat !== undefined &&
+          etablissement.coordonnees.lon !== undefined
+        )
+        .map((etablissement) => {
+          const etabId = etablissement.uai || `${etablissement.coordonnees.lat},${etablissement.coordonnees.lon}`;
+          const title = getEtablissementName(etablissement);
+          return (
+            <Marker
+              key={etabId}
+              position={[etablissement.coordonnees.lat, etablissement.coordonnees.lon]}
+              title={title}
+              alt={title}
+              eventHandlers={{
+                mouseover: () => onHover(etabId),
+                mouseout: () => onHover(null),
+                click: () => onSelect(etabId),
+              }}
+            />
+          );
+        })}
     </>
   );
 };

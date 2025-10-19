@@ -3,7 +3,7 @@ import Card from '../design-system/Card';
 import Typography from '../design-system/Typography';
 import Button from '../design-system/Button';
 import { colors, spacing, radii } from '../design-system/tokens';
-import { Etablissement } from '../types/etablissement';
+import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import { useEffect, useState } from 'react';
 
@@ -30,7 +30,19 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   onClose,
 }) => {
   const { t } = useTranslation();
-  const { uai, uo_lib, type_d_etablissement, reg_nom, dep_nom, com_nom, coordonnees, color } = etablissement;
+  const { uai, siege_lib, implantation_lib, reg_nom, dep_nom, com_nom, coordonnees, color, services, date_ouverture } = etablissement;
+  const displayName = getEtablissementName(etablissement);
+  const types = getEtablissementTypes(etablissement);
+  const normalizedSiege = siege_lib ? siege_lib.replace(/\s+/g, ' ').trim() : undefined;
+  const normalizedImplantation = implantation_lib ? implantation_lib.replace(/\s+/g, ' ').trim() : undefined;
+  const servicesValue = services && services.length > 0 ? services.join(', ') : undefined;
+  const typeValue = types.length > 0 ? types.join(', ') : undefined;
+  const openingDateValue = (() => {
+    if (!date_ouverture) return undefined;
+    const parsed = new Date(date_ouverture);
+    return Number.isNaN(parsed.getTime()) ? date_ouverture : parsed.toLocaleDateString();
+  })();
+  const coordinatesValue = coordonnees ? `${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}` : undefined;
 
   const [mounted, setMounted] = useState(false);
   useEffect(() => {
@@ -60,18 +72,24 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <div style={{ width: 12, height: 12, borderRadius: 2, background: color || '#000' }} />
-            <Typography variant="h2">{uo_lib}</Typography>
+            <Typography variant="h2">{displayName}</Typography>
           </div>
           <Button variant="secondary" compact onClick={onClose}>{t('details.close')}</Button>
         </div>
 
         <div style={{ marginTop: spacing.md }}>
           <Row label={t('details.uai')} value={uai || '—'} />
-          <Row label={t('details.type')} value={(type_d_etablissement || []).join(', ') || '—'} />
+          {normalizedSiege && <Row label={t('details.headquarters')} value={normalizedSiege} />}
+          {normalizedImplantation && normalizedImplantation !== displayName && (
+            <Row label={t('details.implantation')} value={normalizedImplantation} />
+          )}
+          <Row label={t('details.type')} value={typeValue || '—'} />
           <Row label={t('details.region')} value={reg_nom || '—'} />
           <Row label={t('details.department')} value={dep_nom || '—'} />
           <Row label={t('details.city')} value={com_nom || '—'} />
-          <Row label={t('details.coordinates')} value={`${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}`} />
+          {servicesValue && <Row label={t('details.services')} value={servicesValue} />}
+          {openingDateValue && <Row label={t('details.openingDate')} value={openingDateValue} />}
+          <Row label={t('details.coordinates')} value={coordinatesValue || '—'} />
         </div>
 
         <div style={{ marginTop: spacing.md }}>
