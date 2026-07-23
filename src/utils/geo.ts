@@ -23,6 +23,25 @@ const pointInRing = (lat: number, lon: number, ring: Coordinate[]): boolean => {
   return inside;
 };
 
+/** Aire signée (shoelace) d'un anneau [lat, lon] ; le signe donne le sens de rotation. */
+const signedArea = (ring: Coordinate[]): number => {
+  let area = 0;
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+    const [latJ, lonJ] = ring[j];
+    const [latI, lonI] = ring[i];
+    area += (lonI - lonJ) * (latI + latJ);
+  }
+  return area;
+};
+
+/**
+ * Normalise le sens de rotation d'un anneau (anti-horaire).
+ * Nécessaire pour fusionner visuellement plusieurs anneaux dans un seul
+ * chemin avec fillRule 'nonzero' : des sens opposés créeraient des trous.
+ */
+export const ensureCounterClockwise = (ring: Coordinate[]): Coordinate[] =>
+  signedArea(ring) < 0 ? ring : [...ring].reverse();
+
 /** Test point-dans-isochrone (polygone simple ou multi-polygone). */
 export const isPointInIsochrone = (lat: number, lon: number, coords: IsochroneCoordinates): boolean => {
   if (coords.length === 0) return false;

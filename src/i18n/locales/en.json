@@ -36,7 +36,6 @@
         "driving": "Driving",
         "walking": "Walking",
         "cycling": "Cycling",
-        "drivingTraffic": "Driving (Traffic)",
         "transit": "Public transit",
         "transitHint": "Public transit: select an establishment on the map to compute its isochrone (Navitia).",
         "onDemandHint": "Isochrones are computed on demand: use the ⏱ button on the map for visible establishments, or select one."

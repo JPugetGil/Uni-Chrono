@@ -36,7 +36,6 @@
         "driving": "Voiture",
         "walking": "Marche",
         "cycling": "Vélo",
-        "drivingTraffic": "Voiture (Trafic)",
         "transit": "Transports en commun",
         "transitHint": "Transports en commun : sélectionnez un établissement sur la carte pour calculer son isochrone (Navitia).",
         "onDemandHint": "Les isochrones sont calculées à la demande : bouton ⏱ sur la carte pour les établissements visibles, ou sélection d'un établissement."

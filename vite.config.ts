@@ -67,6 +67,21 @@ export default defineConfig({
             }
           },
           {
+            // Surcouches par mode de transport (Waymarked Trails, OpenRailwayMap)
+            urlPattern: /^https:\/\/(?:tile\.waymarkedtrails\.org|[abc]\.tiles\.openrailwaymap\.org)\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'transport-overlay-tiles',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
             urlPattern: /^https:\/\/(?:[abc]\.tile\.openstreetmap\.org)\/.*/i,
             handler: 'CacheFirst',
             options: {

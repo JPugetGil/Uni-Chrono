@@ -1,6 +1,8 @@
 import { Polygon } from 'react-leaflet';
-import { Isochrone } from '../types/isochrone';
+import { Coordinate, Isochrone } from '../types/isochrone';
 import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
+import { ensureCounterClockwise, isMultiPolygon } from '../utils/geo';
+import { colors } from '../design-system/tokens';
 import { Filters } from './FilterPanel';
 
 interface IsochronePolygonsProps {
@@ -38,21 +40,48 @@ const IsochronePolygons: React.FC<IsochronePolygonsProps> = ({
     return true;
   });
 
+  // Vue d'ensemble (ni survol ni sélection) : un seul chemin « union » de tous
+  // les anneaux avec fillRule 'nonzero' — les recouvrements ne s'empilent pas,
+  // la carte reste lisible quel que soit le nombre d'isochrones calculées.
+  if (!selectedEtabId && !hoveredEtabId) {
+    const rings: Coordinate[][] = [];
+    for (const iso of filteredIsochrones) {
+      if (isMultiPolygon(iso.coordinates)) {
+        for (const ring of iso.coordinates) rings.push(ensureCounterClockwise(ring));
+      } else {
+        rings.push(ensureCounterClockwise(iso.coordinates));
+      }
+    }
+    if (rings.length === 0) return null;
+    return (
+      <Polygon
+        positions={rings}
+        pathOptions={{
+          color: colors.primary,
+          weight: 1.5,
+          opacity: 0.5,
+          fillColor: colors.primary,
+          fillOpacity: 0.2,
+          fillRule: 'nonzero',
+        }}
+      />
+    );
+  }
+
+  // Survol ou sélection : isochrone individuelle mise en avant (couleur de l'établissement)
   return (
     <>
       {filteredIsochrones.map((isochrone: Isochrone, index: number) => {
         const isSelected = !!selectedEtabId && isochrone.etablissementId === selectedEtabId;
-        const isHovered = !isSelected && !!hoveredEtabId && isochrone.etablissementId === hoveredEtabId;
         return (
           <Polygon
             key={`${isochrone.etablissementId || index}`}
             positions={isochrone.coordinates}
-            color={isochrone.color}
             pathOptions={{
               color: isochrone.color,
-              weight: isSelected ? 5 : isHovered ? 3 : 1.5,
-              opacity: isSelected ? 1 : isHovered ? 0.95 : 0.85,
-              fillOpacity: isSelected ? 0.3 : isHovered ? 0.2 : 0.12,
+              weight: isSelected ? 5 : 3,
+              opacity: isSelected ? 1 : 0.95,
+              fillOpacity: isSelected ? 0.3 : 0.2,
             }}
           />
         );

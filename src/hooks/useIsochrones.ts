@@ -76,7 +76,11 @@ export const useIsochrones = (
             setIsochrones((prev) => [...prev, isochrone]);
           })
           .catch(() => {
-            // ignore individual fetch errors (including abort)
+            // Échec (hors abort) : retirer l'id des demandes pour permettre
+            // une nouvelle tentative au prochain clic sur ⏱
+            if (!signal.aborted) {
+              requestedIdsRef.current.delete(etabId(etablissement));
+            }
           })
           .finally(() => {
             // Succès comme échec : la requête est terminée (sauf abort = reset de config)

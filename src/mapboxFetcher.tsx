@@ -72,7 +72,8 @@ class RateLimiter {
     }
 }
 
-const isochroneRateLimiter = new RateLimiter(250, 1000)
+// Mapbox Isochrone API : ~300 requêtes/minute — 4/s reste sous la limite
+const isochroneRateLimiter = new RateLimiter(4, 1000)
 
 const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Promise<GeoJSON.FeatureCollection<GeoJSON.Polygon>> => {
     let attempt = 0

@@ -1,6 +1,7 @@
 import { MapContainer, ScaleControl, TileLayer } from "react-leaflet";
 import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
+import { TransportMode } from '../types/transport';
 import EtablissementMarkers from './EtablissementMarkers';
 import IsochronePolygons from './IsochronePolygons';
 import MapCenterOnSelection from './MapCenterOnSelection';
@@ -9,10 +10,24 @@ import LocateButton from './LocateButton';
 import IsochroneComputeButton from './IsochroneComputeButton';
 import { Filters } from './FilterPanel';
 
+// Surcouches de tuiles adaptées au mode de transport (leaflet-providers).
+// 'driving' : pas de surcouche, le fond OSM est déjà centré sur le réseau routier.
+const TRANSPORT_OVERLAYS: Partial<Record<TransportMode, { url: string; attribution: string }>> = {
+  cycling: {
+    url: 'https://tile.waymarkedtrails.org/cycling/{z}/{x}/{y}.png',
+    attribution: 'Cycling routes: &copy; <a href="https://cycling.waymarkedtrails.org">Waymarked Trails</a> (CC-BY-SA)',
+  },
+  transit: {
+    url: 'https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
+    attribution: 'Rail map: &copy; <a href="https://www.openrailwaymap.org/">OpenRailwayMap</a> (CC-BY-SA)',
+  },
+};
+
 interface MapViewProps {
   etablissements: Etablissement[];
   isochrones: Isochrone[];
   filters: Filters;
+  transportMode: TransportMode;
   hoveredEtabId: string | null;
   selectedEtabId: string | null;
   onHoverEtab: (id: string | null) => void;
@@ -28,6 +43,7 @@ const MapView: React.FC<MapViewProps> = ({
   etablissements,
   isochrones,
   filters,
+  transportMode,
   hoveredEtabId,
   selectedEtabId,
   onHoverEtab,
@@ -36,6 +52,8 @@ const MapView: React.FC<MapViewProps> = ({
   isochronesPending = 0,
   isochronesBatchTotal = 0,
 }) => {
+  const overlay = TRANSPORT_OVERLAYS[transportMode];
+
   // Apply filters to etablissements
   const filteredEtab = etablissements.filter(e => {
     if (filters.type && !getEtablissementTypes(e).includes(filters.type)) return false;
@@ -80,6 +98,17 @@ const MapView: React.FC<MapViewProps> = ({
         maxZoom={19}
         noWrap
       />
+      {overlay && (
+        <TileLayer
+          key={transportMode}
+          url={overlay.url}
+          attribution={overlay.attribution}
+          zIndex={10}
+          opacity={0.9}
+          maxZoom={19}
+          noWrap
+        />
+      )}
 
       <MapCenterOnSelection
         etab={selectedEtabId ? etablissements.find(x => (x.uai || `${x.coordonnees.lat},${x.coordonnees.lon}`) === selectedEtabId) || null : null}

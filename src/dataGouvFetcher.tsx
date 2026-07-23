@@ -41,7 +41,18 @@ export const fetchAllEtablissementsData = async (): Promise<Etablissement[]> => 
         (etablissement) =>
             ({
                 ...etablissement,
-                color: `#${Math.floor(Math.random() * 16777215).toString(16)}`
+                color: colorFromId(etablissement.uai || `${etablissement.coordonnees.lat},${etablissement.coordonnees.lon}`)
             } as Etablissement)
     )
+}
+
+// Couleur stable dérivée de l'identifiant (UAI) : identique à chaque chargement,
+// saturation/luminosité fixes pour rester lisible sur le fond de carte
+const colorFromId = (id: string): string => {
+    let hash = 0
+    for (let i = 0; i < id.length; i++) {
+        hash = (hash * 31 + id.charCodeAt(i)) | 0
+    }
+    const hue = ((hash % 360) + 360) % 360
+    return `hsl(${hue}, 65%, 42%)`
 }

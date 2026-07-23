@@ -56,6 +56,7 @@ function App() {
         etablissements={etablissementsGeoJSON || []}
         isochrones={displayedIsochrones}
         filters={filters}
+        transportMode={transportMode}
         hoveredEtabId={hoveredEtabId}
         selectedEtabId={selectedEtabId}
         onHoverEtab={setHoveredEtabId}
