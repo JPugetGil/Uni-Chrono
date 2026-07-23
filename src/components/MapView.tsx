@@ -44,7 +44,10 @@ const MapView: React.FC<MapViewProps> = ({
     <MapContainer
       center={[46.603354, 1.888334]}
       zoom={6}
+      minZoom={3}
       maxZoom={19}
+      maxBounds={[[-90, -180], [90, 180]]}
+      maxBoundsViscosity={1}
       preferCanvas
       style={{ flexGrow: 1 }}
     >
@@ -66,6 +69,7 @@ const MapView: React.FC<MapViewProps> = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
         maxZoom={19}
+        noWrap
       />
 
       <MapCenterOnSelection
