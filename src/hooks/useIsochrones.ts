@@ -26,6 +26,7 @@ export const useIsochrones = (
     // D'abord essayer de charger depuis le cache pour cette config (mode+temps)
     const cachedEntry = LocalStorageCache.loadIsochronesEntry(cacheKey, DEFAULT_TTL_MS);
     if (cachedEntry && cachedEntry.data.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- chargement synchrone depuis le cache localStorage
       setIsochrones(cachedEntry.data);
       setLoadedFromCache(true);
       setCacheTimestampTitle(`Isochrones mis en cache: ${new Date(cachedEntry.ts).toLocaleString()}`);

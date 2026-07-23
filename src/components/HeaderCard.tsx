@@ -48,15 +48,14 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
-    const update = () => setIsMobile(mq.matches);
+    const update = () => {
+      setIsMobile(mq.matches);
+      if (!mq.matches) setConfigOpen(true);
+    };
     update();
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
-
-  useEffect(() => {
-    if (!isMobile) setConfigOpen(true);
-  }, [isMobile]);
 
   return (
     <Card>
