@@ -9,6 +9,7 @@ import FilterPanel, { Filters } from './FilterPanel';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Etablissement } from '../types/etablissement';
 import Button from '../design-system/Button';
+import { spacing } from '../design-system/tokens';
 
 interface HeaderCardProps {
   total: number;
@@ -45,6 +46,26 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
   const getIsMobile = () => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 768px)').matches : false);
   const [isMobile, setIsMobile] = useState<boolean>(getIsMobile);
   const [configOpen, setConfigOpen] = useState<boolean>(() => !getIsMobile());
+  // Header repliable pour laisser plus de place à la carte (persisté)
+  const [collapsed, setCollapsed] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('headerCollapsed') === '1';
+    } catch {
+      return false;
+    }
+  });
+
+  const toggleCollapsed = () => {
+    setCollapsed((v) => {
+      const next = !v;
+      try {
+        localStorage.setItem('headerCollapsed', next ? '1' : '0');
+      } catch {
+        // ignore
+      }
+      return next;
+    });
+  };
 
   useEffect(() => {
     const mq = window.matchMedia('(max-width: 768px)');
@@ -56,6 +77,30 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
     mq.addEventListener('change', update);
     return () => mq.removeEventListener('change', update);
   }, []);
+
+  // Vue repliée : barre fine pour maximiser la surface de la carte
+  if (collapsed) {
+    return (
+      <Card style={{ margin: `${spacing.xs}px 0`, padding: `${spacing.xs}px ${spacing.md}px`, display: 'flex', alignItems: 'center', gap: spacing.md }}>
+        <Typography variant="h3">{t('header.title')}</Typography>
+        {total > 0 && percent < 100 && (
+          <span title={t('progress.resolved', { resolved, total, percent })} style={{ padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
+            {resolved} / {total}
+          </span>
+        )}
+        <Button
+          variant="secondary"
+          compact
+          aria-expanded={false}
+          title={t('header.expandHeader')}
+          onClick={toggleCollapsed}
+          style={{ marginLeft: 'auto' }}
+        >
+          ▾ {t('header.expandHeader')}
+        </Button>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -87,15 +132,32 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
             gap: 16,
           }}
         >
-          <div style={{ marginBottom: 8, display: isMobile && !configOpen ? 'none' : 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
-            {total > 0 && (
-              <ProgressBar percent={percent} resolved={resolved} total={total} />
+          <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
+            {(!isMobile || configOpen) && (
+              <>
+                {total > 0 && (
+                  <div style={{ flex: 1, minWidth: 160 }}>
+                    <ProgressBar percent={percent} resolved={resolved} total={total} />
+                  </div>
+                )}
+                {loadedFromCache && (
+                  <span title={cacheTimestampTitle} style={{ padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
+                    {t('header.loadedFromCache')}
+                  </span>
+                )}
+              </>
             )}
-            {loadedFromCache && (
-              <span title={cacheTimestampTitle} style={{ marginLeft: 12, padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
-                {t('header.loadedFromCache')}
-              </span>
-            )}
+            <Button
+              variant="secondary"
+              compact
+              aria-expanded={true}
+              title={t('header.collapseHeader')}
+              aria-label={t('header.collapseHeader')}
+              onClick={toggleCollapsed}
+              style={{ marginLeft: 'auto', lineHeight: 1 }}
+            >
+              ▴
+            </Button>
           </div>
           <div style={{ display: isMobile && !configOpen ? 'none' : 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <TimeSelector value={timeInMinutes} onChange={onTimeChange} />

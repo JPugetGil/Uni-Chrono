@@ -4,7 +4,14 @@
         "description": "Displaying isochrones of universities and schools in France.",
         "loadedFromCache": "Loaded from cache",
         "showConfig": "Show settings",
-        "hideConfig": "Hide settings"
+        "hideConfig": "Hide settings",
+        "collapseHeader": "Hide header",
+        "expandHeader": "Show header"
+    },
+    "map": {
+        "locate": "My location",
+        "locating": "Locating…",
+        "locateError": "Unable to retrieve your location"
     },
     "filters": {
         "type": "Type",

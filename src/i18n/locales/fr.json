@@ -4,7 +4,14 @@
         "description": "Affichage des isochrones des universités et écoles en France.",
         "loadedFromCache": "Chargé depuis le cache",
         "showConfig": "Afficher les réglages",
-        "hideConfig": "Masquer les réglages"
+        "hideConfig": "Masquer les réglages",
+        "collapseHeader": "Masquer l'en-tête",
+        "expandHeader": "Afficher l'en-tête"
+    },
+    "map": {
+        "locate": "Ma position",
+        "locating": "Localisation…",
+        "locateError": "Impossible de récupérer votre position"
     },
     "filters": {
         "type": "Type",

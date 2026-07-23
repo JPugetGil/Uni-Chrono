@@ -1,9 +1,11 @@
-import { MapContainer, TileLayer } from "react-leaflet";
+import { MapContainer, ScaleControl, TileLayer } from "react-leaflet";
 import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import EtablissementMarkers from './EtablissementMarkers';
 import IsochronePolygons from './IsochronePolygons';
 import MapCenterOnSelection from './MapCenterOnSelection';
+import MapResizeHandler from './MapResizeHandler';
+import LocateButton from './LocateButton';
 import { Filters } from './FilterPanel';
 
 interface MapViewProps {
@@ -42,6 +44,8 @@ const MapView: React.FC<MapViewProps> = ({
     <MapContainer
       center={[46.603354, 1.888334]}
       zoom={6}
+      maxZoom={19}
+      preferCanvas
       style={{ flexGrow: 1 }}
     >
       <EtablissementMarkers
@@ -60,12 +64,18 @@ const MapView: React.FC<MapViewProps> = ({
 
       <TileLayer
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        maxZoom={19}
       />
 
       <MapCenterOnSelection
         etab={selectedEtabId ? etablissements.find(x => (x.uai || `${x.coordonnees.lat},${x.coordonnees.lon}`) === selectedEtabId) || null : null}
         isochrones={isochrones}
       />
+
+      <ScaleControl position="bottomleft" imperial={false} />
+      <MapResizeHandler />
+      <LocateButton />
     </MapContainer>
   );
 };

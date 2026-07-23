@@ -1,4 +1,4 @@
-import { Marker } from 'react-leaflet';
+import { Marker, Tooltip } from 'react-leaflet';
 import { Etablissement, getEtablissementName } from '../types/etablissement';
 
 interface EtablissementMarkersProps {
@@ -27,14 +27,18 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({
             <Marker
               key={etabId}
               position={[etablissement.coordonnees.lat, etablissement.coordonnees.lon]}
-              title={title}
               alt={title}
               eventHandlers={{
                 mouseover: () => onHover(etabId),
                 mouseout: () => onHover(null),
                 click: () => onSelect(etabId),
               }}
-            />
+            >
+              <Tooltip>
+                <strong>{title}</strong>
+                {etablissement.com_nom && <div>{etablissement.com_nom}</div>}
+              </Tooltip>
+            </Marker>
           );
         })}
     </>
