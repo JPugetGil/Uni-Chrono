@@ -1,11 +1,12 @@
 import './App.css'
-import { useState, Fragment } from 'react';
+import { useState, useEffect, Fragment } from 'react';
 import HeaderCard from './components/HeaderCard';
 import MapView from './components/MapView';
 import EtablissementModal from './components/EtablissementModal';
 import { Filters } from './components/FilterPanel';
 import { useEtablissements } from './hooks/useEtablissements';
 import { useIsochrones } from './hooks/useIsochrones';
+import { useTransitIsochrone } from './hooks/useTransitIsochrone';
 import { useUserPreferences } from './hooks/useUserPreferences';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 
@@ -13,12 +14,8 @@ function App() {
   useDocumentTitle();
 
   const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences();
-  const { etablissementsGeoJSON, loadedFromCache: etabFromCache, cacheTimestampTitle: etabCacheTitle } = useEtablissements();
-  const { isochrones, loadedFromCache: isoFromCache, cacheTimestampTitle: isoCacheTitle } = useIsochrones(
-    etablissementsGeoJSON,
-    timeInMinutes,
-    transportMode
-  );
+  const { etablissementsGeoJSON } = useEtablissements();
+  const { isochrones, requestIsochrones, pendingCount, batchTotal } = useIsochrones(timeInMinutes, transportMode);
 
   // Track which marker is hovered (by etablissementId)
   const [hoveredEtabId, setHoveredEtabId] = useState<string | null>(null);
@@ -26,21 +23,25 @@ function App() {
   const [selectedEtabId, setSelectedEtabId] = useState<string | null>(null);
   // Filters state
   const [filters, setFilters] = useState<Filters>({});
-  const loadedFromCache = isoFromCache || etabFromCache;
-  const cacheTimestampTitle = isoFromCache ? isoCacheTitle : etabCacheTitle;
-  const total = etablissementsGeoJSON?.length || 0;
-  const resolved = isochrones?.length || 0;
-  const percent = total > 0 ? Math.round((resolved / total) * 100) : 0;
+
+  // Mode transit (Navitia) : isochrone calculée à la demande pour la sélection
+  const isTransit = transportMode === 'transit';
+  const selectedEtab = selectedEtabId
+    ? etablissementsGeoJSON?.find(x => (x.uai || `${x.coordonnees.lat},${x.coordonnees.lon}`) === selectedEtabId) || null
+    : null;
+  const { isochrone: transitIsochrone } = useTransitIsochrone(selectedEtab, timeInMinutes, isTransit);
+  const displayedIsochrones = isTransit ? (transitIsochrone ? [transitIsochrone] : []) : isochrones;
+
+  // La sélection d'un pin déclenche le calcul de son isochrone si absente
+  useEffect(() => {
+    if (selectedEtab && !isTransit) requestIsochrones([selectedEtab]);
+  }, [selectedEtab, isTransit, requestIsochrones]);
 
   return (
     <Fragment>
       <div>
         <HeaderCard
-          total={total}
-          resolved={resolved}
-          percent={percent}
-          loadedFromCache={loadedFromCache}
-          cacheTimestampTitle={cacheTimestampTitle}
+          showOnDemandHint={!isTransit && displayedIsochrones.length === 0}
           timeInMinutes={timeInMinutes}
           onTimeChange={setTimeInMinutes}
           transportMode={transportMode}
@@ -53,18 +54,21 @@ function App() {
       </div>
       <MapView
         etablissements={etablissementsGeoJSON || []}
-        isochrones={isochrones}
+        isochrones={displayedIsochrones}
         filters={filters}
         hoveredEtabId={hoveredEtabId}
         selectedEtabId={selectedEtabId}
         onHoverEtab={setHoveredEtabId}
         onSelectEtab={setSelectedEtabId}
+        onRequestIsochrones={isTransit ? undefined : requestIsochrones}
+        isochronesPending={pendingCount}
+        isochronesBatchTotal={batchTotal}
       />
 
       <EtablissementModal
         selectedEtabId={selectedEtabId}
         etablissements={etablissementsGeoJSON || []}
-        isochrones={isochrones}
+        isochrones={displayedIsochrones}
         transportMode={transportMode}
         timeInMinutes={timeInMinutes}
         onClose={() => setSelectedEtabId(null)}

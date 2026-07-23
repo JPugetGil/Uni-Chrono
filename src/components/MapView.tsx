@@ -6,6 +6,7 @@ import IsochronePolygons from './IsochronePolygons';
 import MapCenterOnSelection from './MapCenterOnSelection';
 import MapResizeHandler from './MapResizeHandler';
 import LocateButton from './LocateButton';
+import IsochroneComputeButton from './IsochroneComputeButton';
 import { Filters } from './FilterPanel';
 
 interface MapViewProps {
@@ -16,6 +17,11 @@ interface MapViewProps {
   selectedEtabId: string | null;
   onHoverEtab: (id: string | null) => void;
   onSelectEtab: (id: string | null) => void;
+  /** Calcul à la demande des isochrones ; absent en mode transit */
+  onRequestIsochrones?: (etabs: Etablissement[]) => void;
+  /** Progression du lot d'isochrones en cours (bouton ⏱) */
+  isochronesPending?: number;
+  isochronesBatchTotal?: number;
 }
 
 const MapView: React.FC<MapViewProps> = ({
@@ -26,6 +32,9 @@ const MapView: React.FC<MapViewProps> = ({
   selectedEtabId,
   onHoverEtab,
   onSelectEtab,
+  onRequestIsochrones,
+  isochronesPending = 0,
+  isochronesBatchTotal = 0,
 }) => {
   // Apply filters to etablissements
   const filteredEtab = etablissements.filter(e => {
@@ -80,6 +89,14 @@ const MapView: React.FC<MapViewProps> = ({
       <ScaleControl position="bottomleft" imperial={false} />
       <MapResizeHandler />
       <LocateButton />
+      {onRequestIsochrones && (
+        <IsochroneComputeButton
+          etablissements={filteredEtab}
+          onRequest={onRequestIsochrones}
+          pending={isochronesPending}
+          total={isochronesBatchTotal}
+        />
+      )}
     </MapContainer>
   );
 };

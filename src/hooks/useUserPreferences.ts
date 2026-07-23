@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { TransportMode, TRANSPORT_MODES } from '../types/transport';
 
 export const useUserPreferences = () => {
   const [timeInMinutes, setTimeInMinutes] = useState<number>(() => {
@@ -11,11 +12,11 @@ export const useUserPreferences = () => {
     }
   });
 
-  const [transportMode, setTransportMode] = useState<'walking' | 'cycling' | 'driving-traffic' | 'driving'>(() => {
+  const [transportMode, setTransportMode] = useState<TransportMode>(() => {
     try {
       const saved = localStorage.getItem('transportMode');
-      const allowed = new Set(['walking', 'cycling', 'driving-traffic', 'driving']);
-      return saved && allowed.has(saved) ? (saved as 'walking' | 'cycling' | 'driving-traffic' | 'driving') : 'walking';
+      const allowed = new Set<string>(TRANSPORT_MODES);
+      return saved && allowed.has(saved) ? (saved as TransportMode) : 'walking';
     } catch {
       return 'walking';
     }

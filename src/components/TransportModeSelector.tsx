@@ -1,5 +1,6 @@
 import { useTranslation } from 'react-i18next';
 import Select from '../design-system/Select';
+import { hasNavitiaKey } from '../navitiaFetcher';
 
 interface TransportModeSelectorProps {
   value: string;
@@ -15,6 +16,7 @@ const TransportModeSelector: React.FC<TransportModeSelectorProps> = ({ value, on
       <option value="walking">{t('transport.walking')}</option>
       <option value="cycling">{t('transport.cycling')}</option>
       <option value="driving-traffic">{t('transport.drivingTraffic')}</option>
+      {hasNavitiaKey && <option value="transit">{t('transport.transit')}</option>}
     </Select>
   );
 };

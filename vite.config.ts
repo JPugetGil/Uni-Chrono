@@ -40,6 +40,33 @@ export default defineConfig({
             }
           },
           {
+            // Communes (geo.api.gouv.fr) et CSV des loyers (static.data.gouv.fr) :
+            // volumineux et quasi statiques → CacheFirst longue durée
+            urlPattern: /^https:\/\/(?:geo\.api\.gouv\.fr|static\.data\.gouv\.fr)\/.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'housing-data',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/api\.navitia\.io\/.*/i,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'navitia-api',
+              expiration: {
+                maxEntries: 40,
+                maxAgeSeconds: 60 * 60
+              }
+            }
+          },
+          {
             urlPattern: /^https:\/\/(?:[abc]\.tile\.openstreetmap\.org)\/.*/i,
             handler: 'CacheFirst',
             options: {

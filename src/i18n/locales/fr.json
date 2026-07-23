@@ -2,7 +2,6 @@
     "header": {
         "title": "Universités ou écoles en France",
         "description": "Affichage des isochrones des universités et écoles en France.",
-        "loadedFromCache": "Chargé depuis le cache",
         "showConfig": "Afficher les réglages",
         "hideConfig": "Masquer les réglages",
         "collapseHeader": "Masquer l'en-tête",
@@ -11,7 +10,11 @@
     "map": {
         "locate": "Ma position",
         "locating": "Localisation…",
-        "locateError": "Impossible de récupérer votre position"
+        "locateError": "Impossible de récupérer votre position",
+        "computeIsochrones": "Calculer les isochrones des établissements visibles",
+        "computing": "Calcul des isochrones… {{done}}/{{total}}",
+        "computeDone": "Toutes les isochrones sont calculées",
+        "computeTooFar": "Vue trop large (plus de 100 km) : zoomez pour activer le calcul des isochrones"
     },
     "filters": {
         "type": "Type",
@@ -33,11 +36,20 @@
         "driving": "Voiture",
         "walking": "Marche",
         "cycling": "Vélo",
-        "drivingTraffic": "Voiture (Trafic)"
+        "drivingTraffic": "Voiture (Trafic)",
+        "transit": "Transports en commun",
+        "transitHint": "Transports en commun : sélectionnez un établissement sur la carte pour calculer son isochrone (Navitia).",
+        "onDemandHint": "Les isochrones sont calculées à la demande : bouton ⏱ sur la carte pour les établissements visibles, ou sélection d'un établissement."
     },
-    "progress": {
-        "resolved": "Isochrones résolues : {{resolved}} / {{total}} ({{percent}}%)",
-        "allResolved": "Toutes les isochrones sont résolues !"
+    "housing": {
+        "title": "Se loger dans la zone",
+        "loading": "Chargement des loyers…",
+        "error": "Données de loyers indisponibles",
+        "empty": "Aucun centre de commune dans cette isochrone",
+        "count": "{{count}} communes accessibles — les moins chères d'abord",
+        "population": "{{count}} hab.",
+        "rent": "{{rent}} €/m²",
+        "source": "Loyers d'annonce 2023, appartements 1-2 pièces (Carte des loyers, DHUP)"
     },
     "details": {
         "title": "Détails de l'établissement",

@@ -2,12 +2,13 @@ import { useEffect } from 'react';
 import EtablissementDetails from './EtablissementDetails';
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
+import { TransportMode } from '../types/transport';
 
 interface EtablissementModalProps {
   selectedEtabId: string | null;
   etablissements: Etablissement[];
   isochrones: Isochrone[];
-  transportMode: 'walking' | 'cycling' | 'driving-traffic' | 'driving';
+  transportMode: TransportMode;
   timeInMinutes: number;
   onClose: () => void;
 }

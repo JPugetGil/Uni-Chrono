@@ -8,9 +8,10 @@ export type Coordinate = [number, number];
  */
 export interface Isochrone {
   /**
-   * Array of coordinates forming the isochrone polygon
+   * Coordinates forming the isochrone: a single polygon ring (Mapbox),
+   * or an array of polygon rings (Navitia transit isochrones are multi-polygons)
    */
-  coordinates: Coordinate[];
+  coordinates: Coordinate[] | Coordinate[][];
   
   /**
    * Color to display the isochrone on the map

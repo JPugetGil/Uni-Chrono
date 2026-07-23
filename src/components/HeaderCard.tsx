@@ -2,25 +2,22 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Card from '../design-system/Card';
 import Typography from '../design-system/Typography';
-import ProgressBar from './ProgressBar';
 import TimeSelector from './TimeSelector';
 import TransportModeSelector from './TransportModeSelector';
 import FilterPanel, { Filters } from './FilterPanel';
 import LanguageSwitcher from './LanguageSwitcher';
 import { Etablissement } from '../types/etablissement';
+import { TransportMode } from '../types/transport';
 import Button from '../design-system/Button';
-import { spacing } from '../design-system/tokens';
+import { colors, spacing } from '../design-system/tokens';
 
 interface HeaderCardProps {
-  total: number;
-  resolved: number;
-  percent: number;
-  loadedFromCache: boolean;
-  cacheTimestampTitle: string;
+  /** Affiche l'aide sur le calcul à la demande (aucune isochrone affichée) */
+  showOnDemandHint: boolean;
   timeInMinutes: number;
   onTimeChange: (value: number) => void;
-  transportMode: 'walking' | 'cycling' | 'driving-traffic' | 'driving';
-  onTransportModeChange: (value: 'walking' | 'cycling' | 'driving-traffic' | 'driving') => void;
+  transportMode: TransportMode;
+  onTransportModeChange: (value: TransportMode) => void;
   etablissements: Etablissement[] | undefined;
   filters: Filters;
   onFiltersChange: (filters: Filters) => void;
@@ -28,11 +25,7 @@ interface HeaderCardProps {
 }
 
 const HeaderCard: React.FC<HeaderCardProps> = ({
-  total,
-  resolved,
-  percent,
-  loadedFromCache,
-  cacheTimestampTitle,
+  showOnDemandHint,
   timeInMinutes,
   onTimeChange,
   transportMode,
@@ -83,11 +76,6 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
     return (
       <Card style={{ margin: `${spacing.xs}px 0`, padding: `${spacing.xs}px ${spacing.md}px`, display: 'flex', alignItems: 'center', gap: spacing.md }}>
         <Typography variant="h3">{t('header.title')}</Typography>
-        {total > 0 && percent < 100 && (
-          <span title={t('progress.resolved', { resolved, total, percent })} style={{ padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
-            {resolved} / {total}
-          </span>
-        )}
         <Button
           variant="secondary"
           compact
@@ -133,20 +121,6 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
           }}
         >
           <div style={{ marginBottom: 8, display: 'flex', flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: spacing.sm }}>
-            {(!isMobile || configOpen) && (
-              <>
-                {total > 0 && (
-                  <div style={{ flex: 1, minWidth: 160 }}>
-                    <ProgressBar percent={percent} resolved={resolved} total={total} />
-                  </div>
-                )}
-                {loadedFromCache && (
-                  <span title={cacheTimestampTitle} style={{ padding: '2px 8px', background: '#eef6ff', color: '#1e5bb8', borderRadius: 12, fontSize: 12, whiteSpace: 'nowrap' }}>
-                    {t('header.loadedFromCache')}
-                  </span>
-                )}
-              </>
-            )}
             <Button
               variant="secondary"
               compact
@@ -161,7 +135,17 @@ const HeaderCard: React.FC<HeaderCardProps> = ({
           </div>
           <div style={{ display: isMobile && !configOpen ? 'none' : 'flex', flexDirection: 'row', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
             <TimeSelector value={timeInMinutes} onChange={onTimeChange} />
-            <TransportModeSelector value={transportMode} onChange={(v) => onTransportModeChange(v as typeof transportMode)} />
+            <TransportModeSelector value={transportMode} onChange={(v) => onTransportModeChange(v as TransportMode)} />
+            {transportMode === 'transit' && (
+              <span style={{ fontSize: 12, color: colors.textSecondary, flexBasis: '100%' }}>
+                {t('transport.transitHint')}
+              </span>
+            )}
+            {transportMode !== 'transit' && showOnDemandHint && (
+              <span style={{ fontSize: 12, color: colors.textSecondary, flexBasis: '100%' }}>
+                {t('transport.onDemandHint')}
+              </span>
+            )}
             <FilterPanel
               etablissements={etablissements}
               values={filters}

@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useMap } from 'react-leaflet';
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
+import { flattenCoordinates } from '../utils/geo';
 
 interface MapCenterOnSelectionProps {
   etab: Etablissement | null;
@@ -19,9 +20,10 @@ const MapCenterOnSelection: React.FC<MapCenterOnSelectionProps> = ({ etab, isoch
     const etabId = etab.uai || `${lat},${lon}`;
     const iso = isochrones.find(i => i.etablissementId === etabId);
 
-    if (iso && iso.coordinates.length > 0) {
-      const lats = iso.coordinates.map(coord => coord[0]);
-      const lngs = iso.coordinates.map(coord => coord[1]);
+    const points = iso ? flattenCoordinates(iso.coordinates) : [];
+    if (iso && points.length > 0) {
+      const lats = points.map(coord => coord[0]);
+      const lngs = points.map(coord => coord[1]);
       const bounds: [[number, number], [number, number]] = [
         [Math.min(...lats), Math.min(...lngs)],
         [Math.max(...lats), Math.max(...lngs)]
