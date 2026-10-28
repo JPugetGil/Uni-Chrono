@@ -1,22 +1,67 @@
 {
-    "header": {
-        "title": "Universités ou écoles en France",
-        "description": "Affichage des isochrones des universités et écoles en France.",
-        "showConfig": "Afficher les réglages",
-        "hideConfig": "Masquer les réglages",
-        "collapseHeader": "Masquer l'en-tête",
-        "expandHeader": "Afficher l'en-tête"
+    "app": {
+        "name": "Uni-Chrono",
+        "tagline": "Temps de trajet vers l'enseignement supérieur",
+        "documentTitle": "Uni-Chrono - Isochrones universitaires"
     },
-    "map": {
-        "locate": "Ma position",
-        "locating": "Localisation…",
-        "locateError": "Impossible de récupérer votre position",
-        "computeIsochrones": "Calculer les isochrones des établissements visibles",
-        "computing": "Calcul des isochrones… {{done}}/{{total}}",
-        "computeDone": "Toutes les isochrones sont calculées",
-        "computeTooFar": "Vue trop large (plus de 100 km) : zoomez pour activer le calcul des isochrones"
+    "panel": {
+        "collapse": "Réduire le panneau",
+        "expand": "Afficher le panneau",
+        "help": "Afficher l'aide",
+        "sheetExpand": "Agrandir le panneau",
+        "sheetCollapse": "Réduire le panneau",
+        "summary": "{{time}} min {{mode}} · {{total}} établissements"
+    },
+    "language": {
+        "label": "Langue"
+    },
+    "onboarding": {
+        "title": "Comment ça marche ?",
+        "step1": "Choisissez un mode de transport et une durée.",
+        "step2": "Cherchez une ville ou une adresse, ou zoomez sur la carte.",
+        "step3": "Cliquez sur un établissement pour voir sa zone accessible et les loyers autour, ou calculez les zones de tous les établissements visibles.",
+        "dismiss": "J'ai compris"
+    },
+    "loading": {
+        "etablissements": "Chargement des établissements…",
+        "error": "Impossible de charger les établissements",
+        "retry": "Réessayer"
+    },
+    "search": {
+        "label": "Rechercher un établissement, une ville ou une adresse",
+        "placeholder": "Établissement, ville ou adresse",
+        "clear": "Effacer la recherche",
+        "filterBy": "Établissements dont le nom contient « {{query}} »",
+        "groupEtablissements": "Établissements",
+        "groupCities": "Villes",
+        "groupPlaces": "Adresses",
+        "cityCount_one": "{{count}} établissement",
+        "cityCount_other": "{{count}} établissements",
+        "searchingPlaces": "Recherche d'adresses…",
+        "nameFilter": "Nom : « {{name}} »",
+        "removeNameFilter": "Retirer le filtre par nom",
+        "removePlace": "Retirer le repère"
+    },
+    "travel": {
+        "mode": "Mode de transport",
+        "duration": "Durée maximale",
+        "minutes": "{{count}} min",
+        "minutesLong": "{{count}} minutes"
+    },
+    "transport": {
+        "driving": "Voiture",
+        "walking": "Marche",
+        "cycling": "Vélo",
+        "transit": "Transports en commun",
+        "transitShort": "Transports",
+        "by_driving": "en voiture",
+        "by_walking": "à pied",
+        "by_cycling": "à vélo",
+        "by_transit": "en transports en commun",
+        "transitHint": "Transports en commun : cliquez sur un établissement pour calculer sa zone (Navitia)."
     },
     "filters": {
+        "title": "Filtres",
         "type": "Type",
         "all": "Tous",
         "region": "Région",
@@ -24,35 +69,73 @@
         "department": "Département",
         "allMasculine": "Tous",
         "city": "Ville",
-        "name": "Nom (contient)",
-        "namePlaceholder": "Ex. : Sorbonne",
-        "reset": "Réinitialiser"
+        "reset": "Réinitialiser",
+        "option": "{{label}} ({{count}})"
     },
-    "time": {
-        "label": "Temps en minutes"
+    "legend": {
+        "title": "Légende",
+        "university": "Université",
+        "grand": "Grand établissement",
+        "school": "École ou institut",
+        "other": "Autre",
+        "cluster": "Groupe d'établissements : cliquez pour zoomer",
+        "zone": "Zones accessibles calculées"
     },
-    "transport": {
-        "label": "Mode de transport",
-        "driving": "Voiture",
-        "walking": "Marche",
-        "cycling": "Vélo",
-        "transit": "Transports en commun",
-        "transitHint": "Transports en commun : sélectionnez un établissement sur la carte pour calculer son isochrone (Navitia).",
-        "onDemandHint": "Les isochrones sont calculées à la demande : bouton ⏱ sur la carte pour les établissements visibles, ou sélection d'un établissement."
+    "map": {
+        "locate": "Ma position",
+        "locating": "Localisation…",
+        "locateError": "Impossible de récupérer votre position",
+        "compute_one": "Calculer la zone de {{count}} établissement",
+        "compute_other": "Calculer les zones de {{count}} établissements",
+        "computing": "Calcul des zones… {{done}}/{{total}}",
+        "computeDone_one": "{{count}} zone calculée",
+        "computeDone_other": "{{count}} zones calculées",
+        "computeDonePartial": "{{done}}/{{total}} zones calculées : relancez pour les autres",
+        "allComputed": "Zones visibles déjà calculées",
+        "noneVisible": "Aucun établissement visible",
+        "computeTooFar": "Zoomez (vue de moins de 100 km) pour calculer les zones",
+        "cluster_one": "{{count}} établissement : zoomer",
+        "cluster_other": "Groupe de {{count}} établissements : zoomer",
+        "colocated": "{{count}} établissements à cet endroit"
+    },
+    "zone": {
+        "title": "Zone accessible",
+        "headline": "En {{time}} min {{mode}}",
+        "computing": "Calcul de la zone…",
+        "error": "Zone indisponible pour le moment",
+        "retry": "Réessayer",
+        "bands": "Temps de trajet",
+        "bandLabel": "≤ {{time}} min",
+        "area": "Surface",
+        "areaValue": "≈ {{value}} km²",
+        "communes": "Communes",
+        "medianRent": "Loyer médian",
+        "rentValue": "{{value}} €/m²",
+        "monthlyFor": "≈ {{amount}}/mois pour {{surface}} m²"
     },
     "housing": {
         "title": "Se loger dans la zone",
         "loading": "Chargement des loyers…",
         "error": "Données de loyers indisponibles",
-        "empty": "Aucun centre de commune dans cette isochrone",
-        "count": "{{count}} communes accessibles — les moins chères d'abord",
-        "population": "{{count}} hab.",
-        "rent": "{{rent}} €/m²",
-        "source": "Loyers d'annonce 2023, appartements 1-2 pièces (Carte des loyers, DHUP)"
+        "empty": "Aucune commune trouvée dans cette zone",
+        "count_one": "{{count}} commune accessible",
+        "count_other": "{{count}} communes accessibles, les moins chères d'abord",
+        "surface": "Surface du logement",
+        "surfaceOption": "{{surface}} m²",
+        "monthly": "≈ {{amount}}/mois",
+        "perM2": "{{rent}} €/m²",
+        "range": "{{low}} à {{high}} €/m²",
+        "population": "{{value}} hab.",
+        "noRent": "Loyer inconnu",
+        "showAll": "Afficher les {{count}} communes",
+        "showLess": "Afficher moins",
+        "showOnMap": "{{name}} : afficher sur la carte",
+        "source": "Loyers d'annonce 2023 charges comprises, appartements de 1 ou 2 pièces (Carte des loyers, ANIL). Estimation indicative : loyer au m² × surface."
     },
     "details": {
-        "title": "Détails de l'établissement",
-        "close": "Fermer",
+        "close": "Fermer la fiche",
+        "back": "Retour",
+        "sheet": "Fiche de l'établissement",
         "uai": "UAI",
         "headquarters": "Siège",
         "implantation": "Implantation",
@@ -62,14 +145,6 @@
         "city": "Commune",
         "services": "Services",
         "openingDate": "Date d'ouverture",
-        "coordinates": "Coordonnées",
-        "statistics": "Statistiques",
-        "isochrone": "Isochrone",
-        "available": "Disponible",
-        "unavailable": "En cours / indisponible",
-        "points": "Points",
-        "mode": "Mode",
-        "time": "Temps",
-        "minutes": "{{time}} min"
+        "coordinates": "Coordonnées"
     }
 }

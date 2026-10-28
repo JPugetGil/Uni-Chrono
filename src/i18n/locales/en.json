@@ -1,22 +1,67 @@
 {
-    "header": {
-        "title": "Universities or schools in France",
-        "description": "Displaying isochrones of universities and schools in France.",
-        "showConfig": "Show settings",
-        "hideConfig": "Hide settings",
-        "collapseHeader": "Hide header",
-        "expandHeader": "Show header"
+    "app": {
+        "name": "Uni-Chrono",
+        "tagline": "Travel times to higher education",
+        "documentTitle": "Uni-Chrono - University Isochrones"
     },
-    "map": {
-        "locate": "My location",
-        "locating": "Locating…",
-        "locateError": "Unable to retrieve your location",
-        "computeIsochrones": "Compute isochrones for visible establishments",
-        "computing": "Computing isochrones… {{done}}/{{total}}",
-        "computeDone": "All isochrones computed",
-        "computeTooFar": "View too wide (over 100 km): zoom in to enable isochrone computation"
+    "panel": {
+        "collapse": "Collapse panel",
+        "expand": "Show panel",
+        "help": "Show help",
+        "sheetExpand": "Expand panel",
+        "sheetCollapse": "Collapse panel",
+        "summary": "{{time}} min {{mode}} · {{total}} institutions"
+    },
+    "language": {
+        "label": "Language"
+    },
+    "onboarding": {
+        "title": "How does it work?",
+        "step1": "Pick a mode of transport and a duration.",
+        "step2": "Search for a city or an address, or zoom in on the map.",
+        "step3": "Click an institution to see the area you can reach and the rents around it, or compute the areas of every visible institution.",
+        "dismiss": "Got it"
+    },
+    "loading": {
+        "etablissements": "Loading institutions…",
+        "error": "Could not load institutions",
+        "retry": "Retry"
+    },
+    "search": {
+        "label": "Search for an institution, a city or an address",
+        "placeholder": "Institution, city or address",
+        "clear": "Clear search",
+        "filterBy": "Institutions whose name contains “{{query}}”",
+        "groupEtablissements": "Institutions",
+        "groupCities": "Cities",
+        "groupPlaces": "Addresses",
+        "cityCount_one": "{{count}} institution",
+        "cityCount_other": "{{count}} institutions",
+        "searchingPlaces": "Searching addresses…",
+        "nameFilter": "Name: “{{name}}”",
+        "removeNameFilter": "Remove name filter",
+        "removePlace": "Remove marker"
+    },
+    "travel": {
+        "mode": "Mode of transport",
+        "duration": "Maximum duration",
+        "minutes": "{{count}} min",
+        "minutesLong": "{{count}} minutes"
+    },
+    "transport": {
+        "driving": "Car",
+        "walking": "Walking",
+        "cycling": "Cycling",
+        "transit": "Public transport",
+        "transitShort": "Transit",
+        "by_driving": "by car",
+        "by_walking": "on foot",
+        "by_cycling": "by bike",
+        "by_transit": "by public transport",
+        "transitHint": "Public transport: click an institution to compute its area (Navitia)."
     },
     "filters": {
+        "title": "Filters",
         "type": "Type",
         "all": "All",
         "region": "Region",
@@ -24,52 +69,82 @@
         "department": "Department",
         "allMasculine": "All",
         "city": "City",
-        "name": "Name (contains)",
-        "namePlaceholder": "E.g.: Sorbonne",
-        "reset": "Reset"
+        "reset": "Reset",
+        "option": "{{label}} ({{count}})"
     },
-    "time": {
-        "label": "Time in minutes"
+    "legend": {
+        "title": "Legend",
+        "university": "University",
+        "grand": "Grand établissement",
+        "school": "School or institute",
+        "other": "Other",
+        "cluster": "Group of institutions: click to zoom in",
+        "zone": "Computed reachable areas"
     },
-    "transport": {
-        "label": "Transport mode",
-        "driving": "Driving",
-        "walking": "Walking",
-        "cycling": "Cycling",
-        "transit": "Public transit",
-        "transitHint": "Public transit: select an establishment on the map to compute its isochrone (Navitia).",
-        "onDemandHint": "Isochrones are computed on demand: use the ⏱ button on the map for visible establishments, or select one."
+    "map": {
+        "locate": "My location",
+        "locating": "Locating…",
+        "locateError": "Unable to retrieve your location",
+        "compute_one": "Compute the area of {{count}} institution",
+        "compute_other": "Compute the areas of {{count}} institutions",
+        "computing": "Computing areas… {{done}}/{{total}}",
+        "computeDone_one": "{{count}} area computed",
+        "computeDone_other": "{{count}} areas computed",
+        "computeDonePartial": "{{done}}/{{total}} areas computed: retry for the rest",
+        "allComputed": "Visible areas already computed",
+        "noneVisible": "No institution in view",
+        "computeTooFar": "Zoom in (view under 100 km) to compute areas",
+        "cluster_one": "{{count}} institution: zoom in",
+        "cluster_other": "Group of {{count}} institutions: zoom in",
+        "colocated": "{{count}} institutions at this location"
+    },
+    "zone": {
+        "title": "Reachable area",
+        "headline": "Within {{time}} min {{mode}}",
+        "computing": "Computing the area…",
+        "error": "Area unavailable for now",
+        "retry": "Retry",
+        "bands": "Travel time",
+        "bandLabel": "≤ {{time}} min",
+        "area": "Area",
+        "areaValue": "≈ {{value}} km²",
+        "communes": "Municipalities",
+        "medianRent": "Median rent",
+        "rentValue": "€{{value}}/m²",
+        "monthlyFor": "≈ {{amount}}/month for {{surface}} m²"
     },
     "housing": {
         "title": "Housing in the area",
-        "loading": "Loading rent data…",
+        "loading": "Loading rents…",
         "error": "Rent data unavailable",
-        "empty": "No commune centre falls within this isochrone",
-        "count": "{{count}} communes within reach — cheapest first",
-        "population": "{{count}} inhab.",
-        "rent": "{{rent}} €/m²",
-        "source": "Advertised rents 2023, 1-2-room apartments (Carte des loyers, DHUP)"
+        "empty": "No municipality found in this area",
+        "count_one": "{{count}} reachable municipality",
+        "count_other": "{{count}} reachable municipalities, cheapest first",
+        "surface": "Home size",
+        "surfaceOption": "{{surface}} m²",
+        "monthly": "≈ {{amount}}/month",
+        "perM2": "€{{rent}}/m²",
+        "range": "€{{low}} to €{{high}}/m²",
+        "population": "{{value}} inhabitants",
+        "noRent": "Rent unknown",
+        "showAll": "Show all {{count}} municipalities",
+        "showLess": "Show less",
+        "showOnMap": "{{name}}: show on map",
+        "source": "2023 advertised rents including charges, 1–2 room apartments (Carte des loyers, ANIL). Rough estimate: rent per m² × size."
     },
     "details": {
-        "title": "Establishment Details",
         "close": "Close",
+        "back": "Back",
+        "sheet": "Institution details",
         "uai": "UAI",
         "headquarters": "Headquarters",
-        "implantation": "Campus / Site",
+        "implantation": "Site",
         "type": "Type",
         "region": "Region",
         "department": "Department",
-        "city": "City",
+        "city": "Municipality",
         "services": "Services",
         "openingDate": "Opening date",
-        "coordinates": "Coordinates",
-        "statistics": "Statistics",
-        "isochrone": "Isochrone",
-        "available": "Available",
-        "unavailable": "In progress / unavailable",
-        "points": "Points",
-        "mode": "Mode",
-        "time": "Time",
-        "minutes": "{{time}} min"
+        "coordinates": "Coordinates"
     }
 }

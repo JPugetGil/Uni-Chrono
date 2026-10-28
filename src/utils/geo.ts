@@ -42,6 +42,41 @@ const signedArea = (ring: Coordinate[]): number => {
 export const ensureCounterClockwise = (ring: Coordinate[]): Coordinate[] =>
   signedArea(ring) < 0 ? ring : [...ring].reverse();
 
+/**
+ * Surface approchée d'un (multi-)polygone en km² : projection équirectangulaire
+ * autour de la latitude moyenne, suffisante à l'échelle d'une isochrone.
+ */
+export const isochroneAreaKm2 = (coords: IsochroneCoordinates): number => {
+  const rings = isMultiPolygon(coords) ? coords : [coords];
+  const points = rings.flat();
+  if (points.length === 0) return 0;
+  const lat0 = (points.reduce((sum, [lat]) => sum + lat, 0) / points.length) * (Math.PI / 180);
+  const kmPerDegLat = 110.574;
+  const kmPerDegLon = 111.32 * Math.cos(lat0);
+  return rings.reduce((total, ring) => {
+    let area = 0;
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [latJ, lonJ] = ring[j];
+      const [latI, lonI] = ring[i];
+      area += lonJ * kmPerDegLon * (latI * kmPerDegLat) - lonI * kmPerDegLon * (latJ * kmPerDegLat);
+    }
+    return total + Math.abs(area) / 2;
+  }, 0);
+};
+
+/** Emprise [[sud, ouest], [nord, est]] d'une liste de points [lat, lon]. */
+export const boundsOf = (points: Coordinate[]): [[number, number], [number, number]] | null => {
+  if (points.length === 0) return null;
+  let minLat = Infinity, maxLat = -Infinity, minLon = Infinity, maxLon = -Infinity;
+  for (const [lat, lon] of points) {
+    if (lat < minLat) minLat = lat;
+    if (lat > maxLat) maxLat = lat;
+    if (lon < minLon) minLon = lon;
+    if (lon > maxLon) maxLon = lon;
+  }
+  return [[minLat, minLon], [maxLat, maxLon]];
+};
+
 /** Test point-dans-isochrone (polygone simple ou multi-polygone). */
 export const isPointInIsochrone = (lat: number, lon: number, coords: IsochroneCoordinates): boolean => {
   if (coords.length === 0) return false;

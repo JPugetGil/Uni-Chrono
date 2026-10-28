@@ -1,9 +1,12 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { registerSW } from 'virtual:pwa-register'
+import '@fontsource-variable/inter/wght.css'
 import './i18n/config'
-import App from './App.tsx'
+// Leaflet avant index.css : les surcharges de l'app doivent venir après leaflet.css
 import './leaflet-marker-config.ts'
+import './index.css'
+import App from './App.tsx'
 
 // Purge des données mises en cache par les anciennes versions (le cache
 // localStorage des établissements/isochrones a été supprimé de l'app)

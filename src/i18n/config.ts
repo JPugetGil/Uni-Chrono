@@ -22,8 +22,12 @@ i18n
     },
   });
 
+// Langue du document (lecteurs d'écran, césure, formats natifs) alignée sur l'interface
+document.documentElement.lang = i18n.language;
+
 i18n.on('languageChanged', (lng) => {
   localStorage.setItem('language', lng);
+  document.documentElement.lang = lng;
 });
 
 export default i18n;

@@ -1,8 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Circle, CircleMarker, useMap } from 'react-leaflet';
-import * as L from 'leaflet';
 import { useTranslation } from 'react-i18next';
+import { LoaderCircle, LocateFixed } from 'lucide-react';
 import { colors } from '../design-system/tokens';
+import { cx } from '../design-system/cx';
+import { focusRing } from '../design-system/Button';
+import MapControl from './MapControl';
 
 /**
  * Bouton « Ma position » : centre la carte sur la position de l'utilisateur
@@ -14,16 +17,6 @@ const LocateButton: React.FC = () => {
   const [position, setPosition] = useState<[number, number] | null>(null);
   const [accuracy, setAccuracy] = useState<number>(0);
   const [status, setStatus] = useState<'idle' | 'locating' | 'error'>('idle');
-  const buttonRef = useRef<HTMLButtonElement | null>(null);
-
-  // Empêche les clics/scrolls sur le bouton d'être interprétés par la carte
-  useEffect(() => {
-    const el = buttonRef.current;
-    if (el) {
-      L.DomEvent.disableClickPropagation(el);
-      L.DomEvent.disableScrollPropagation(el);
-    }
-  }, []);
 
   const locate = () => {
     if (!('geolocation' in navigator)) {
@@ -48,31 +41,27 @@ const LocateButton: React.FC = () => {
 
   return (
     <>
-      <button
-        ref={buttonRef}
-        type="button"
-        onClick={locate}
-        title={label}
-        aria-label={label}
-        disabled={status === 'locating'}
-        style={{
-          position: 'absolute',
-          top: 80,
-          left: 10,
-          zIndex: 1000,
-          width: 34,
-          height: 34,
-          background: status === 'error' ? '#fdecea' : '#fff',
-          border: '2px solid rgba(0,0,0,0.2)',
-          borderRadius: 4,
-          cursor: status === 'locating' ? 'wait' : 'pointer',
-          fontSize: 16,
-          lineHeight: 1,
-          padding: 0,
-        }}
-      >
-        {status === 'locating' ? '…' : '📍'}
-      </button>
+      <MapControl position="topright" className="leaflet-bar">
+        <button
+          type="button"
+          onClick={locate}
+          title={label}
+          aria-label={label}
+          disabled={status === 'locating'}
+          className={cx(
+            'flex size-[30px] items-center justify-center rounded-[4px] bg-white hover:bg-slate-50',
+            focusRing,
+            status === 'error' ? 'text-red-700' : 'text-slate-800',
+            status === 'locating' && 'cursor-wait'
+          )}
+        >
+          {status === 'locating' ? (
+            <LoaderCircle aria-hidden className="size-4 animate-spin" />
+          ) : (
+            <LocateFixed aria-hidden className="size-4" />
+          )}
+        </button>
+      </MapControl>
 
       {position && (
         <>
@@ -80,12 +69,14 @@ const LocateButton: React.FC = () => {
             <Circle
               center={position}
               radius={accuracy}
+              interactive={false}
               pathOptions={{ color: colors.primary, weight: 1, fillColor: colors.primary, fillOpacity: 0.08 }}
             />
           )}
           <CircleMarker
             center={position}
             radius={7}
+            interactive={false}
             pathOptions={{ color: '#fff', weight: 2, fillColor: colors.primary, fillOpacity: 1 }}
           />
         </>

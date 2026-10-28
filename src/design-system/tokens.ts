@@ -1,39 +1,23 @@
+import { EtablissementCategory } from '../types/etablissement';
+
+/**
+ * Couleurs lues côté JavaScript (tracés Leaflet, marqueurs) : Leaflet ne
+ * connaît pas les classes Tailwind. Les valeurs reprennent le thème d'index.css.
+ */
 export const colors = {
-  primary: '#2196f3',
-  primaryDark: '#1769aa',
-  success: '#4caf50',
-  background: '#f7f9fa',
-  surface: '#fff',
-  border: '#e0e0e0',
-  text: '#222',
-  textSecondary: '#666',
-  accent: '#ff9800',
-  error: '#e53935',
+  /** blue-700 : contraste 6,7:1 sur blanc */
+  primary: '#1d4ed8',
+  /** slate-900 : contour de la commune survolée */
+  highlight: '#0f172a',
 };
 
-export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 16,
-  lg: 24,
-  xl: 40,
-};
-
-export const radii = {
-  sm: 4,
-  md: 8,
-  lg: 16,
-};
-
-export const fontSizes = {
-  xs: 11,
-  sm: 13,
-  md: 16,
-  lg: 20,
-  xl: 28,
-};
-
-export const shadows = {
-  sm: '0 1px 2px rgba(0,0,0,0.04)',
-  md: '0 2px 8px rgba(0,0,0,0.08)',
+/**
+ * Couleur par catégorie d'établissement. Trois teintes validées entre toutes
+ * les paires (daltonisme compris) + un gris neutre pour « Autre ».
+ */
+export const categoryColors: Record<EtablissementCategory, string> = {
+  university: '#2a78d6',
+  grand: '#eb6834',
+  school: '#1baf7a',
+  other: '#898781',
 };

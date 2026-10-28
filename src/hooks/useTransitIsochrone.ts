@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import { fetchTransitIsochrone } from '../navitiaFetcher';
+import { etabId as getEtabId } from '../utils/filters';
 
 /**
  * Isochrone transports en commun (Navitia) pour l'établissement sélectionné.
@@ -13,9 +14,10 @@ export const useTransitIsochrone = (
   timeInMinutes: number,
   enabled: boolean
 ) => {
-  const [result, setResult] = useState<{ key: string; iso: Isochrone } | null>(null);
+  // iso null : la requête a échoué (quota, clé, réseau)
+  const [result, setResult] = useState<{ key: string; iso: Isochrone | null } | null>(null);
 
-  const etabId = etab ? etab.uai || `${etab.coordonnees.lat},${etab.coordonnees.lon}` : null;
+  const etabId = etab ? getEtabId(etab) : null;
   const key = etabId ? `${etabId}:${timeInMinutes}` : null;
 
   useEffect(() => {
@@ -28,17 +30,20 @@ export const useTransitIsochrone = (
           iso: {
             coordinates,
             color: etab.color || '#2196f3',
-            etablissementId: etab.uai || `${etab.coordonnees.lat},${etab.coordonnees.lon}`,
+            etablissementId: getEtabId(etab),
           },
         });
       })
       .catch(() => {
-        // erreurs (abort, quota, pas de clé) : pas d'isochrone affiché
+        // abort : rien à faire ; autres erreurs : isochrone indisponible
+        if (!ctrl.signal.aborted) setResult({ key, iso: null });
       });
     return () => ctrl.abort();
   }, [enabled, etab, key, timeInMinutes]);
 
-  const isochrone = enabled && key && result?.key === key ? result.iso : null;
-  const loading = enabled && !!key && result?.key !== key;
-  return { isochrone, loading };
+  const settled = enabled && !!key && result?.key === key;
+  const isochrone = settled ? result.iso : null;
+  const loading = enabled && !!key && !settled;
+  const failed = settled && !result.iso;
+  return { isochrone, loading, failed };
 };

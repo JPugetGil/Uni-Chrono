@@ -1,14 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Isochrone } from '../types/isochrone';
-import { CommuneInfo, fetchCommunes, fetchRents } from '../housingFetcher';
+import { CommuneInfo, RentInfo, fetchCommunes, fetchRents } from '../housingFetcher';
 import { flattenCoordinates, isPointInIsochrone } from '../utils/geo';
 
 export interface HousingCommune {
   code: string;
   nom: string;
   population: number;
-  /** Loyer d'annonce prédit en €/m² (appartement 1-2 pièces), si connu */
+  /** Centre de la commune */
+  lat: number;
+  lon: number;
+  /** Loyer d'annonce prédit en €/m² charges comprises (appartement 1-2 pièces), si connu */
   rent?: number;
+  /** Intervalle de prédiction du loyer en €/m² */
+  rentLow?: number;
+  rentHigh?: number;
 }
 
 export type HousingStatus = 'idle' | 'loading' | 'ready' | 'error';
@@ -21,7 +27,7 @@ export type HousingStatus = 'idle' | 'loading' | 'ready' | 'error';
  */
 export const useHousing = (isochrone?: Isochrone) => {
   const [communes, setCommunes] = useState<CommuneInfo[] | null>(null);
-  const [rents, setRents] = useState<Map<string, number> | null>(null);
+  const [rents, setRents] = useState<Map<string, RentInfo> | null>(null);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -99,9 +105,29 @@ export const useHousing = (isochrone?: Isochrone) => {
 
     const items = communes
       .filter((c) => covered.has(c.code))
-      .map((c) => ({ code: c.code, nom: c.nom, population: c.population, rent: rents.get(c.code) }))
+      .map((c) => {
+        const info = rents.get(c.code);
+        return {
+          code: c.code,
+          nom: c.nom,
+          population: c.population,
+          lat: c.lat,
+          lon: c.lon,
+          rent: info?.rent,
+          rentLow: info?.low,
+          rentHigh: info?.high,
+        };
+      })
       .sort((a, b) => (a.rent ?? Infinity) - (b.rent ?? Infinity) || b.population - a.population);
 
     return { status: 'ready', items };
   }, [isochrone, communes, rents, failed]);
+};
+
+/** Médiane des loyers connus (€/m²) des communes de la zone */
+export const medianRent = (items: HousingCommune[]): number | undefined => {
+  const rents = items.map((c) => c.rent).filter((r): r is number => r != null).sort((a, b) => a - b);
+  if (rents.length === 0) return undefined;
+  const mid = Math.floor(rents.length / 2);
+  return rents.length % 2 ? rents[mid] : (rents[mid - 1] + rents[mid]) / 2;
 };
