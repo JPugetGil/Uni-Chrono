@@ -6,7 +6,8 @@ export const useUserPreferences = () => {
     try {
       const saved = localStorage.getItem('timeInMinutes');
       const n = saved ? Number(saved) : NaN;
-      return Number.isFinite(n) && n > 0 ? n : 15;
+      // Mapbox plafonne les isochrones à 60 min
+      return Number.isInteger(n) && n >= 1 && n <= 60 ? n : 15;
     } catch {
       return 15;
     }

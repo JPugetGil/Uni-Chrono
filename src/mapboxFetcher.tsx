@@ -1,4 +1,4 @@
-import { Coordinate } from './types/isochrone';
+import { Coordinate, IsochroneBand } from './types/isochrone';
 
 const mapBoxBaseURL = "https://api.mapbox.com/isochrone/v1/mapbox";
 
@@ -116,13 +116,17 @@ const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Pr
 // You must provide your Mapbox access token here
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_API_KEY || '';
 
+/**
+ * Isochrones d'un point pour plusieurs durées en une seule requête
+ * (bandes de temps, jusqu'à 4 durées croissantes entre 1 et 60 min).
+ */
 export const fetchIsochroneData = async (
     lat: number,
     lon: number,
-    time: number = 30, // in minutes for Mapbox API
+    contoursMinutes: number[],
     transportMode: string = "driving", // "driving", "walking", "cycling"
     signal?: AbortSignal
-) => {
+): Promise<IsochroneBand[]> => {
     // Mapbox supports only certain profiles
     const supportedProfiles = ["driving", "walking", "cycling"]
     const profile = supportedProfiles.includes(transportMode) ? transportMode : "driving"
@@ -130,21 +134,28 @@ export const fetchIsochroneData = async (
     // Mapbox expects lon,lat
     const coordinates = `${lon},${lat}`
 
-    // Mapbox API: time is in minutes, not seconds
-    const contours_minutes = Math.round(time / 60) || 1
+    const minutes = [...new Set(contoursMinutes.map((m) => Math.min(60, Math.max(1, Math.round(m)))))]
+        .sort((a, b) => a - b)
+        .slice(-4)
 
-    const url = `${mapBoxBaseURL}/${profile}/${coordinates}?contours_minutes=${contours_minutes}&polygons=true&access_token=${MAPBOX_ACCESS_TOKEN}`
+    const url = `${mapBoxBaseURL}/${profile}/${coordinates}?contours_minutes=${minutes.join(',')}&polygons=true&access_token=${MAPBOX_ACCESS_TOKEN}`
 
     const data = await fetchWithRetries(url, signal, 3)
     return formatIsochrone(data)
 }
 
-const formatIsochrone = (isochroneData: GeoJSON.FeatureCollection<GeoJSON.Polygon>): Coordinate[] => {
+// Une feature par durée (propriété `contour`) : anneau extérieur, [lon, lat] → [lat, lon]
+const formatIsochrone = (isochroneData: GeoJSON.FeatureCollection<GeoJSON.Polygon>): IsochroneBand[] => {
     if (!isochroneData || !isochroneData.features || !isochroneData.features.length) {
         return []
     }
-    // Return the coordinates of the first polygon (most common use)
-    return isochroneData.features[0]?.geometry?.coordinates[0]?.map(
-        (coord: number[]) => [coord[1], coord[0]] as Coordinate
-    ) || []
+    return isochroneData.features
+        .map((feature) => ({
+            minutes: Number(feature.properties?.contour),
+            coordinates: (feature.geometry?.coordinates[0] || []).map(
+                (coord: number[]) => [coord[1], coord[0]] as Coordinate
+            ),
+        }))
+        .filter((band) => Number.isFinite(band.minutes) && band.coordinates.length > 0)
+        .sort((a, b) => a.minutes - b.minutes)
 }

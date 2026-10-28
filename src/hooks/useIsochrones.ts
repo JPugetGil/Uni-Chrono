@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Isochrone } from '../types/isochrone';
+import { Isochrone, bandMinutes } from '../types/isochrone';
 import { Etablissement } from '../types/etablissement';
 import { fetchIsochroneData } from '../mapboxFetcher';
 import { TransportMode } from '../types/transport';
+import { etabId } from '../utils/filters';
 
-const etabId = (e: Etablissement) => e.uai || `${e.coordonnees.lat},${e.coordonnees.lon}`;
+/** État d'une isochrone demandée et pas (encore) disponible */
+export type IsochroneRequestStatus = 'pending' | 'error';
 
 /**
  * Isochrones à la demande : rien n'est pré-calculé ni persisté.
  * `requestIsochrones(etabs)` lance le calcul des isochrones manquantes
- * (pins visibles via le bouton carte, ou établissement sélectionné) ;
+ * (établissements visibles via le bouton carte, ou établissement sélectionné) ;
  * les résultats sont accumulés en mémoire pour la config courante (mode + temps).
+ * Chaque requête renvoie aussi les bandes de temps intermédiaires.
  */
 export const useIsochrones = (
   timeInMinutes: number,
@@ -18,8 +21,10 @@ export const useIsochrones = (
 ) => {
   const configKey = `${transportMode}:${timeInMinutes}`;
   const [isochrones, setIsochrones] = useState<Isochrone[]>([]);
-  // Lot en cours : pending = requêtes en vol, total = taille du lot (pour l'anneau de progression)
-  const [batch, setBatch] = useState({ pending: 0, total: 0 });
+  // Lot en cours : pending = requêtes en vol, total = taille du lot, failed = échecs (progression et bilan)
+  const [batch, setBatch] = useState({ pending: 0, total: 0, failed: 0 });
+  // Statut des isochrones en vol ou en échec, par établissement (fiche de l'établissement)
+  const [statusById, setStatusById] = useState<Record<string, IsochroneRequestStatus>>({});
 
   // Identifiants déjà demandés pour la config courante (évite les doublons)
   const requestedIdsRef = useRef<Set<string>>(new Set());
@@ -32,7 +37,8 @@ export const useIsochrones = (
     requestedIdsRef.current = new Set();
     // eslint-disable-next-line react-hooks/set-state-in-effect -- reset synchrone au changement de configuration
     setIsochrones([]);
-    setBatch({ pending: 0, total: 0 });
+    setBatch({ pending: 0, total: 0, failed: 0 });
+    setStatusById({});
 
     return () => controllerRef.current.abort();
   }, [configKey]);
@@ -55,37 +61,55 @@ export const useIsochrones = (
       setBatch((b) => ({
         pending: b.pending + todo.length,
         total: (b.pending === 0 ? 0 : b.total) + todo.length,
+        failed: b.pending === 0 ? 0 : b.failed,
       }));
+      setStatusById((prev) => {
+        const next = { ...prev };
+        for (const e of todo) next[etabId(e)] = 'pending';
+        return next;
+      });
 
       const signal = controllerRef.current.signal;
+      const minutes = bandMinutes(timeInMinutes);
       for (const etablissement of todo) {
+        const id = etabId(etablissement);
         fetchIsochroneData(
           etablissement.coordonnees.lat,
           etablissement.coordonnees.lon,
-          timeInMinutes * 60,
+          minutes,
           transportMode,
           signal
         )
-          .then((coordinates) => {
-            if (signal.aborted || !coordinates || coordinates.length === 0) return;
+          .then((bands) => {
+            if (signal.aborted) return;
+            const outer = bands[bands.length - 1];
+            if (!outer) throw new Error('Empty isochrone');
             const isochrone: Isochrone = {
-              coordinates,
+              coordinates: outer.coordinates,
+              bands,
               color: etablissement.color || '#000000',
-              etablissementId: etabId(etablissement),
+              etablissementId: id,
             };
             setIsochrones((prev) => [...prev, isochrone]);
+            setStatusById((prev) => {
+              const next = { ...prev };
+              delete next[id];
+              return next;
+            });
           })
           .catch(() => {
             // Échec (hors abort) : retirer l'id des demandes pour permettre
-            // une nouvelle tentative au prochain clic sur ⏱
+            // une nouvelle tentative (bouton de la carte ou de la fiche)
             if (!signal.aborted) {
-              requestedIdsRef.current.delete(etabId(etablissement));
+              requestedIdsRef.current.delete(id);
+              setStatusById((prev) => ({ ...prev, [id]: 'error' }));
+              setBatch((b) => ({ ...b, failed: b.failed + 1 }));
             }
           })
           .finally(() => {
             // Succès comme échec : la requête est terminée (sauf abort = reset de config)
             if (!signal.aborted) {
-              setBatch((b) => ({ pending: Math.max(0, b.pending - 1), total: b.total }));
+              setBatch((b) => ({ ...b, pending: Math.max(0, b.pending - 1) }));
             }
           });
       }
@@ -96,7 +120,9 @@ export const useIsochrones = (
   return {
     isochrones,
     requestIsochrones,
+    statusById,
     pendingCount: batch.pending,
     batchTotal: batch.total,
+    batchFailed: batch.failed,
   };
 };

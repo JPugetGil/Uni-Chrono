@@ -1,10 +1,12 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
   plugins: [
     react(),
+    tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: [
@@ -14,7 +16,8 @@ export default defineConfig({
       ],
       manifest: false,
       workbox: {
-        globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt}'],
+        // Police : seuls les sous-ensembles latin et latin-ext sont précachés
+        globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt}', '**/inter-latin-*.woff2'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
@@ -36,6 +39,22 @@ export default defineConfig({
               expiration: {
                 maxEntries: 40,
                 maxAgeSeconds: 60 * 60
+              }
+            }
+          },
+          {
+            // Contour d'une commune (surbrillance au survol de la liste des loyers) :
+            // cache dédié, déclaré avant la règle générale pour ne pas évincer la liste des communes
+            urlPattern: /^https:\/\/geo\.api\.gouv\.fr\/communes\/\d.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'commune-contours',
+              expiration: {
+                maxEntries: 200,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
               }
             }
           },

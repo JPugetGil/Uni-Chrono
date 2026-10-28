@@ -1,191 +1,146 @@
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import Card from '../design-system/Card';
-import Typography from '../design-system/Typography';
-import Button from '../design-system/Button';
-import { colors, spacing, radii } from '../design-system/tokens';
-import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
+import { ArrowLeft, ChevronDown } from 'lucide-react';
+import IconButton from '../design-system/IconButton';
+import { Etablissement, getEtablissementCategory, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
-import { TransportMode, transportModeLabelKey } from '../types/transport';
-import { flattenCoordinates } from '../utils/geo';
-import { useHousing } from '../hooks/useHousing';
-import { useEffect, useState } from 'react';
+import { TransportMode } from '../types/transport';
+import { medianRent, useHousing } from '../hooks/useHousing';
+import { useFormatters } from '../i18n/useFormatters';
+import { CategoryDot } from './Legend';
+import ZoneSummary, { ZoneStatus } from './ZoneSummary';
+import HousingList from './HousingList';
 
 interface EtablissementDetailsProps {
   etablissement: Etablissement;
-  isochrone?: Isochrone;
-  transportMode?: TransportMode;
-  timeInMinutes?: number;
-  onClose?: () => void;
+  isochrone?: Isochrone | null;
+  zoneStatus: ZoneStatus;
+  onRetryZone?: () => void;
+  transportMode: TransportMode;
+  timeInMinutes: number;
+  onClose: () => void;
+  pinnedCommune: string | null;
+  onPinCommune: (code: string | null) => void;
+  onHoverCommune: (code: string | null) => void;
 }
 
-const MAX_HOUSING_ROWS = 12;
-
 const Row: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => (
-  <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
-    <Typography variant="caption" style={{ minWidth: 110, color: colors.textSecondary }}>{label}</Typography>
-    <Typography variant="body">{value || 'N/A'}</Typography>
+  <div className="grid grid-cols-[7.5rem_1fr] gap-2 py-1.5">
+    <dt className="text-xs text-slate-600">{label}</dt>
+    <dd className="text-sm break-words text-slate-900">{value || '—'}</dd>
   </div>
 );
 
+/**
+ * Fiche d'un établissement dans le panneau : zone accessible et ses chiffres,
+ * logements dans la zone, puis informations administratives (repliées).
+ */
 const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   etablissement,
   isochrone,
+  zoneStatus,
+  onRetryZone,
   transportMode,
   timeInMinutes,
   onClose,
+  pinnedCommune,
+  onPinCommune,
+  onHoverCommune,
 }) => {
   const { t } = useTranslation();
+  const fmt = useFormatters();
   const { uai, siege_lib, implantation_lib, reg_nom, dep_nom, com_nom, coordonnees, color, services, date_ouverture } = etablissement;
   const displayName = getEtablissementName(etablissement);
+  const category = getEtablissementCategory(etablissement);
   const types = getEtablissementTypes(etablissement);
   const normalizedSiege = siege_lib ? siege_lib.replace(/\s+/g, ' ').trim() : undefined;
   const normalizedImplantation = implantation_lib ? implantation_lib.replace(/\s+/g, ' ').trim() : undefined;
-  const servicesValue = services && services.length > 0 ? services.join(', ') : undefined;
-  const typeValue = types.length > 0 ? types.join(', ') : undefined;
   const openingDateValue = (() => {
     if (!date_ouverture) return undefined;
     const parsed = new Date(date_ouverture);
-    return Number.isNaN(parsed.getTime()) ? date_ouverture : parsed.toLocaleDateString();
+    return Number.isNaN(parsed.getTime()) ? date_ouverture : fmt.date(parsed);
   })();
-  const coordinatesValue = coordonnees ? `${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}` : undefined;
 
-  const housing = useHousing(isochrone);
+  const housing = useHousing(zoneStatus === 'ready' && isochrone ? isochrone : undefined);
+  const [surface, setSurface] = useState(20);
 
-  const [mounted, setMounted] = useState(false);
+  // Le titre prend le focus à l'ouverture : les lecteurs d'écran annoncent la fiche
+  const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
-    const timer = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(timer);
-  }, []);
+    titleRef.current?.focus({ preventScroll: true });
+  }, [uai]);
 
   return (
-    <div
-      aria-label={t('details.title')}
-      role="dialog"
-      aria-modal="true"
-      style={{
-        position: 'fixed',
-        top: spacing.lg,
-        right: spacing.lg,
-        width: 360,
-        maxHeight: 'calc(100vh - 2 * 24px)',
-        overflowY: 'auto',
-        zIndex: 1000,
-        opacity: mounted ? 1 : 0,
-        transform: mounted ? 'translateY(0px)' : 'translateY(-6px)',
-        transition: 'opacity 180ms ease, transform 180ms ease',
-      }}
-    >
-      <Card style={{ padding: spacing.lg }}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 8 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 12, height: 12, borderRadius: 2, background: color || '#000' }} />
-            <Typography variant="h2">{displayName}</Typography>
-          </div>
-          <Button variant="secondary" compact onClick={onClose}>{t('details.close')}</Button>
+    <article aria-labelledby="etab-title" className="flex flex-col gap-4">
+      <header className="flex items-start gap-1">
+        <IconButton label={t('details.back')} onClick={onClose} className="-ml-2">
+          <ArrowLeft aria-hidden className="size-5" />
+        </IconButton>
+        <div className="min-w-0 flex-1 pt-1">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+            <CategoryDot color={color || '#898781'} className="size-3" />
+            {t(`legend.${category}`)}
+          </p>
+          <h2
+            id="etab-title"
+            ref={titleRef}
+            tabIndex={-1}
+            className="mt-1 text-lg leading-snug font-semibold break-words text-slate-900 outline-none"
+          >
+            {displayName}
+          </h2>
+          {(com_nom || dep_nom) && (
+            <p className="mt-0.5 text-sm text-slate-600">{[com_nom, dep_nom].filter(Boolean).join(' · ')}</p>
+          )}
         </div>
+      </header>
 
-        <div style={{ marginTop: spacing.md }}>
-          <Row label={t('details.uai')} value={uai || '—'} />
+      <ZoneSummary
+        status={zoneStatus}
+        isochrone={isochrone}
+        transportMode={transportMode}
+        timeInMinutes={timeInMinutes}
+        housingStatus={housing.status}
+        communesCount={housing.items.length}
+        medianRent={medianRent(housing.items)}
+        surface={surface}
+        onRetry={onRetryZone}
+      />
+
+      <HousingList
+        status={housing.status}
+        items={housing.items}
+        surface={surface}
+        onSurfaceChange={setSurface}
+        pinnedCommune={pinnedCommune}
+        onPinCommune={onPinCommune}
+        onHoverCommune={onHoverCommune}
+      />
+
+      <details className="group rounded-xl ring-1 ring-slate-200">
+        <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
+          {t('details.sheet')}
+          <ChevronDown aria-hidden className="size-4 text-slate-500 transition-transform group-open:rotate-180" />
+        </summary>
+        <dl className="divide-y divide-slate-100 border-t border-slate-200 px-3 pb-1">
+          <Row label={t('details.uai')} value={uai} />
           {normalizedSiege && <Row label={t('details.headquarters')} value={normalizedSiege} />}
           {normalizedImplantation && normalizedImplantation !== displayName && (
             <Row label={t('details.implantation')} value={normalizedImplantation} />
           )}
-          <Row label={t('details.type')} value={typeValue || '—'} />
-          <Row label={t('details.region')} value={reg_nom || '—'} />
-          <Row label={t('details.department')} value={dep_nom || '—'} />
-          <Row label={t('details.city')} value={com_nom || '—'} />
-          {servicesValue && <Row label={t('details.services')} value={servicesValue} />}
+          <Row label={t('details.type')} value={types.join(', ')} />
+          <Row label={t('details.region')} value={reg_nom} />
+          <Row label={t('details.department')} value={dep_nom} />
+          <Row label={t('details.city')} value={com_nom} />
+          {services && services.length > 0 && <Row label={t('details.services')} value={services.join(', ')} />}
           {openingDateValue && <Row label={t('details.openingDate')} value={openingDateValue} />}
-          <Row label={t('details.coordinates')} value={coordinatesValue || '—'} />
-        </div>
-
-        <div style={{ marginTop: spacing.md }}>
-          <Typography variant="h3" style={{ display: 'block', marginBottom: 8 }}>{t('details.statistics')}</Typography>
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'auto 1fr',
-            rowGap: 6,
-            columnGap: 8,
-            background: colors.background,
-            border: `1px solid ${colors.border}`,
-            borderRadius: radii.md,
-            padding: spacing.sm,
-          }}>
-            <Typography variant="caption">{t('details.isochrone')}</Typography>
-            <Typography variant="body">{isochrone ? t('details.available') : t('details.unavailable')}</Typography>
-
-            <Typography variant="caption">{t('details.points')}</Typography>
-            <Typography variant="body">{isochrone ? flattenCoordinates(isochrone.coordinates).length : '—'}</Typography>
-
-            {transportMode && (
-              <>
-                <Typography variant="caption">{t('details.mode')}</Typography>
-                <Typography variant="body">{t(transportModeLabelKey(transportMode))}</Typography>
-              </>
-            )}
-            {typeof timeInMinutes === 'number' && (
-              <>
-                <Typography variant="caption">{t('details.time')}</Typography>
-                <Typography variant="body">{t('details.minutes', { time: timeInMinutes })}</Typography>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Se loger dans la zone : communes de l'isochrone + loyers (Carte des loyers, DHUP) */}
-        {housing.status !== 'idle' && (
-          <div style={{ marginTop: spacing.md }}>
-            <Typography variant="h3" style={{ display: 'block', marginBottom: 8 }}>{t('housing.title')}</Typography>
-            {housing.status === 'loading' && (
-              <Typography variant="caption">{t('housing.loading')}</Typography>
-            )}
-            {housing.status === 'error' && (
-              <Typography variant="caption">{t('housing.error')}</Typography>
-            )}
-            {housing.status === 'ready' && housing.items.length === 0 && (
-              <Typography variant="caption">{t('housing.empty')}</Typography>
-            )}
-            {housing.status === 'ready' && housing.items.length > 0 && (
-              <>
-                <Typography variant="caption" style={{ display: 'block', marginBottom: 8 }}>
-                  {t('housing.count', { count: housing.items.length })}
-                </Typography>
-                <div style={{
-                  maxHeight: 220,
-                  overflowY: 'auto',
-                  border: `1px solid ${colors.border}`,
-                  borderRadius: radii.md,
-                }}>
-                  {housing.items.slice(0, MAX_HOUSING_ROWS).map((c, i) => (
-                    <div
-                      key={c.code}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'baseline',
-                        gap: 8,
-                        padding: `6px ${spacing.sm}px`,
-                        background: i % 2 === 0 ? colors.surface : colors.background,
-                      }}
-                    >
-                      <Typography variant="body" style={{ flex: 1, fontSize: 14 }}>{c.nom}</Typography>
-                      <Typography variant="caption" style={{ whiteSpace: 'nowrap' }}>
-                        {c.population > 0 ? t('housing.population', { count: c.population }) : ''}
-                      </Typography>
-                      <Typography variant="body" style={{ fontWeight: 600, whiteSpace: 'nowrap', fontSize: 14, color: colors.primaryDark }}>
-                        {c.rent != null ? t('housing.rent', { rent: c.rent.toFixed(1) }) : '—'}
-                      </Typography>
-                    </div>
-                  ))}
-                </div>
-                <Typography variant="caption" style={{ display: 'block', marginTop: 6 }}>
-                  {t('housing.source')}
-                </Typography>
-              </>
-            )}
-          </div>
-        )}
-      </Card>
-    </div>
+          <Row
+            label={t('details.coordinates')}
+            value={coordonnees ? `${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}` : undefined}
+          />
+        </dl>
+      </details>
+    </article>
   );
 };
 
