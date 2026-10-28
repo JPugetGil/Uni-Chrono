@@ -1,4 +1,5 @@
 import { Coordinate, IsochroneBand } from './types/isochrone';
+import { IsochroneError, httpError, isRetryable } from './isochroneError';
 
 const mapBoxBaseURL = "https://api.mapbox.com/isochrone/v1/mapbox";
 
@@ -89,7 +90,7 @@ const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Pr
             isochroneRateLimiter.schedule(async () => {
                 const response = await fetch(url, { signal })
                 if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`)
+                    throw httpError(response)
                 }
                 const data = await response.json()
                 return data
@@ -98,8 +99,9 @@ const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Pr
                     return reject(new DOMException('Aborted', 'AbortError'))
                 }
 
-                if (attempt <= maxRetries) {
-                    const delay = 500 * Math.pow(2, attempt - 1)
+                // Clé refusée ou requête invalide : inutile de réessayer
+                if (attempt <= maxRetries && isRetryable(err)) {
+                    const delay = (err instanceof IsochroneError && err.retryAfterMs) || 500 * Math.pow(2, attempt - 1)
                     setTimeout(() => {
                         tryOnce()
                     }, delay)
@@ -116,6 +118,8 @@ const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Pr
 // You must provide your Mapbox access token here
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_API_KEY || '';
 
+export const hasMapboxKey = MAPBOX_ACCESS_TOKEN.length > 0;
+
 /**
  * Isochrones d'un point pour plusieurs durées en une seule requête
  * (bandes de temps, jusqu'à 4 durées croissantes entre 1 et 60 min).
@@ -127,6 +131,10 @@ export const fetchIsochroneData = async (
     transportMode: string = "driving", // "driving", "walking", "cycling"
     signal?: AbortSignal
 ): Promise<IsochroneBand[]> => {
+    if (!hasMapboxKey) {
+        throw new IsochroneError('unconfigured', 'VITE_MAPBOX_API_KEY absente')
+    }
+
     // Mapbox supports only certain profiles
     const supportedProfiles = ["driving", "walking", "cycling"]
     const profile = supportedProfiles.includes(transportMode) ? transportMode : "driving"

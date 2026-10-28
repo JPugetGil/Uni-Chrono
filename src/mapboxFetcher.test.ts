@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fetchIsochroneData } from './mapboxFetcher';
 
 const feature = (contour: number, lon: number, lat: number) => ({
@@ -7,8 +7,14 @@ const feature = (contour: number, lon: number, lat: number) => ({
   geometry: { type: 'Polygon', coordinates: [[[lon, lat], [lon + 0.01, lat], [lon, lat + 0.01]]] },
 });
 
-const jsonResponse = (body: unknown, status = 200) =>
-  ({ ok: status < 400, status, json: () => Promise.resolve(body) }) as Response;
+const jsonResponse = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
+  ({ ok: status < 400, status, headers: new Headers(headers), json: () => Promise.resolve(body) }) as Response;
+
+const empty = { type: 'FeatureCollection', features: [] };
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('fetchIsochroneData', () => {
   it('demande toutes les bandes en une requête et les renvoie triées, en [lat, lon]', async () => {
@@ -44,5 +50,36 @@ describe('fetchIsochroneData', () => {
     await fetchIsochroneData(45, 5, [15], 'transit');
 
     expect(new URL(fetch.mock.calls[0][0]).pathname).toContain('/mapbox/driving/');
+  });
+
+  it('ne réessaie pas une clé refusée et signale la cause', async () => {
+    const fetch = vi.fn().mockResolvedValue(jsonResponse({ message: 'Not Authorized' }, 401));
+    vi.stubGlobal('fetch', fetch);
+
+    await expect(fetchIsochroneData(45, 5, [15], 'walking')).rejects.toMatchObject({ kind: 'auth' });
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('réessaie après une erreur serveur, et après le délai Retry-After d’un quota dépassé', async () => {
+    // Module neuf : son limiteur de débit doit tourner sur les minuteurs simulés
+    vi.useFakeTimers();
+    vi.resetModules();
+    const { fetchIsochroneData } = await import('./mapboxFetcher');
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce(jsonResponse({}, 503))
+      .mockResolvedValueOnce(jsonResponse({}, 429, { 'Retry-After': '3' }))
+      .mockResolvedValue(jsonResponse(empty));
+    vi.stubGlobal('fetch', fetch);
+
+    const pending = fetchIsochroneData(45, 5, [15], 'walking');
+    await vi.advanceTimersByTimeAsync(600);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    // 429 : attente de 3 s demandée par le service, pas du simple délai exponentiel (1 s)
+    await vi.advanceTimersByTimeAsync(2000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1500);
+    await expect(pending).resolves.toEqual([]);
+    expect(fetch).toHaveBeenCalledTimes(3);
   });
 });

@@ -96,6 +96,8 @@ const square = (lon: number, lat: number, minutes: number) => {
 export interface MockOptions {
   /** Nombre de réponses en erreur 500 avant que les établissements se chargent */
   etablissementsFailures?: number;
+  /** Statut HTTP renvoyé par le faux Mapbox (200 par défaut) */
+  mapboxStatus?: number;
 }
 
 /** Requêtes d'isochrones reçues par le faux Mapbox */
@@ -147,6 +149,9 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
       const [lon, lat] = coordinates.split(',').map(Number);
       const minutes = (url.searchParams.get('contours_minutes') ?? '').split(',').map(Number);
       isochroneCalls.push({ profile, minutes });
+      if (options.mapboxStatus && options.mapboxStatus !== 200) {
+        return route.fulfill({ status: options.mapboxStatus, contentType: 'application/json', body: '{"message":"Not Authorized"}' });
+      }
       // Ordre décroissant, comme une réponse Mapbox possible : l'app ne doit pas en dépendre
       const features = [...minutes]
         .sort((a, b) => b - a)
@@ -168,6 +173,24 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
   await page.route(
     (url) => url.hostname === 'data.geopf.fr' && url.pathname.startsWith('/geocodage/'),
     (route) => json(route, PLACES)
+  );
+
+  // Geoapify (transports en commun) : îlots autour de deux arrêts par durée
+  await page.route(
+    (url) => url.hostname === 'api.geoapify.com' && url.pathname === '/v1/isoline',
+    (route) => {
+      const url = new URL(route.request().url());
+      const lat = Number(url.searchParams.get('lat'));
+      const lon = Number(url.searchParams.get('lon'));
+      const ranges = (url.searchParams.get('range') ?? '').split(',').map(Number);
+      isochroneCalls.push({ profile: 'transit', minutes: ranges.map((r) => r / 60) });
+      const features = ranges.map((range) => ({
+        type: 'Feature',
+        properties: { range, mode: 'transit' },
+        geometry: { type: 'MultiPolygon', coordinates: [square(lon, lat, range / 120), square(lon + 0.03, lat, range / 240)] },
+      }));
+      return json(route, { type: 'FeatureCollection', features });
+    }
   );
 
   return { isochroneCalls };

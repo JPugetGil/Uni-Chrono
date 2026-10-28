@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Bike, Car, Footprints, TramFront } from 'lucide-react';
 import SegmentedControl, { SegmentedOption } from '../design-system/SegmentedControl';
 import { TransportMode, TRANSPORT_MODES } from '../types/transport';
-import { hasNavitiaKey } from '../navitiaFetcher';
+import { hasTransitKey } from '../geoapifyFetcher';
 
 /** Durées proposées (min) : Mapbox plafonne les isochrones à 60 min */
 const DURATIONS = [5, 10, 15, 20, 30, 45, 60];
@@ -34,7 +34,7 @@ const TravelSettings: React.FC<TravelSettingsProps> = ({
   const { t } = useTranslation();
 
   const modeOptions: SegmentedOption<TransportMode>[] = TRANSPORT_MODES
-    .filter((mode) => mode !== 'transit' || hasNavitiaKey)
+    .filter((mode) => mode !== 'transit' || hasTransitKey)
     .map((mode) => ({
       value: mode,
       icon: MODE_ICONS[mode],

@@ -1,6 +1,6 @@
 import { Coordinate } from '../types/isochrone';
 
-/** Un isochrone peut être un polygone simple (anneau) ou un multi-polygone (Navitia). */
+/** Un isochrone peut être un polygone simple (anneau) ou un multi-polygone (transports en commun). */
 export type IsochroneCoordinates = Coordinate[] | Coordinate[][];
 
 export const isMultiPolygon = (coords: IsochroneCoordinates): coords is Coordinate[][] =>

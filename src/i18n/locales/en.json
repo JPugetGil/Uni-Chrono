@@ -58,7 +58,7 @@
         "by_walking": "on foot",
         "by_cycling": "by bike",
         "by_transit": "by public transport",
-        "transitHint": "Public transport: click an institution to compute its area (Navitia)."
+        "transitHint": "Public transport: the area is computed for the institution you open (Geoapify, no specific departure time)."
     },
     "filters": {
         "title": "Filters",
@@ -103,7 +103,6 @@
         "title": "Reachable area",
         "headline": "Within {{time}} min {{mode}}",
         "computing": "Computing the area…",
-        "error": "Area unavailable for now",
         "retry": "Retry",
         "bands": "Travel time",
         "bandLabel": "≤ {{time}} min",
@@ -112,7 +111,13 @@
         "communes": "Municipalities",
         "medianRent": "Median rent",
         "rentValue": "€{{value}}/m²",
-        "monthlyFor": "≈ {{amount}}/month for {{surface}} m²"
+        "monthlyFor": "≈ {{amount}}/month for {{surface}} m²",
+        "errors": {
+            "unconfigured": "Areas unavailable: no {{provider}} key is configured.",
+            "auth": "The {{provider}} key was refused: areas cannot be computed.",
+            "quota": "Too many requests sent to {{provider}}: retry in a moment.",
+            "failed": "Area unavailable for now"
+        }
     },
     "housing": {
         "title": "Housing in the area",
@@ -174,6 +179,7 @@
         "communesDetail": "geo.api.gouv.fr (IGN, Insee)",
         "isochrones": "Travel times",
         "geocoding": "Addresses",
-        "generatedAt": "Data prepared on {{date}}"
+        "generatedAt": "Data prepared on {{date}}",
+        "isochronesDetail": "Mapbox; public transport: Geoapify"
     }
 }

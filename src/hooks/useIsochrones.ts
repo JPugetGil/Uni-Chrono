@@ -4,9 +4,10 @@ import { Etablissement } from '../types/etablissement';
 import { fetchIsochroneData } from '../mapboxFetcher';
 import { TransportMode } from '../types/transport';
 import { etabId } from '../utils/filters';
+import { IsochroneErrorKind, errorKindOf } from '../isochroneError';
 
-/** État d'une isochrone demandée et pas (encore) disponible */
-export type IsochroneRequestStatus = 'pending' | 'error';
+/** État d'une isochrone demandée et pas (encore) disponible : en cours, ou cause de l'échec */
+export type IsochroneRequestStatus = 'pending' | IsochroneErrorKind;
 
 /**
  * Isochrones à la demande : rien n'est pré-calculé ni persisté.
@@ -45,7 +46,7 @@ export const useIsochrones = (
 
   const requestIsochrones = useCallback(
     (etabs: Etablissement[]) => {
-      // Le mode transit (Navitia) est géré à la sélection par useTransitIsochrone
+      // Le mode transit (Geoapify) est géré à la sélection par useTransitIsochrone
       if (transportMode === 'transit') return;
 
       const todo = etabs.filter(
@@ -97,12 +98,12 @@ export const useIsochrones = (
               return next;
             });
           })
-          .catch(() => {
+          .catch((error) => {
             // Échec (hors abort) : retirer l'id des demandes pour permettre
             // une nouvelle tentative (bouton de la carte ou de la fiche)
             if (!signal.aborted) {
               requestedIdsRef.current.delete(id);
-              setStatusById((prev) => ({ ...prev, [id]: 'error' }));
+              setStatusById((prev) => ({ ...prev, [id]: errorKindOf(error) }));
               setBatch((b) => ({ ...b, failed: b.failed + 1 }));
             }
           })

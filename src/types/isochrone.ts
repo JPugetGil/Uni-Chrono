@@ -4,11 +4,12 @@
 export type Coordinate = [number, number];
 
 /**
- * Zone atteignable en `minutes` au plus (anneau extérieur du polygone)
+ * Zone atteignable en `minutes` au plus : anneau extérieur du polygone, ou
+ * anneaux de plusieurs îlots (transports en commun)
  */
 export interface IsochroneBand {
   minutes: number;
-  coordinates: Coordinate[];
+  coordinates: Coordinate[] | Coordinate[][];
 }
 
 /**
@@ -17,12 +18,12 @@ export interface IsochroneBand {
 export interface Isochrone {
   /**
    * Coordinates forming the isochrone: a single polygon ring (Mapbox),
-   * or an array of polygon rings (Navitia transit isochrones are multi-polygons)
+   * or an array of polygon rings (transit isochrones are multi-polygons)
    */
   coordinates: Coordinate[] | Coordinate[][];
 
   /**
-   * Bandes de temps de la plus proche à la plus lointaine (Mapbox) ;
+   * Bandes de temps de la plus proche à la plus lointaine ;
    * la dernière correspond à `coordinates`
    */
   bands?: IsochroneBand[];

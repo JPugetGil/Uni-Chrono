@@ -31,12 +31,12 @@ The script fails if a source returns too few rows, so a broken source never repl
 | What | Service | Key |
 |------|---------|-----|
 | Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` |
-| Isochrones (public transport, optional) | Navitia | `VITE_NAVITIA_API_KEY` |
+| Isochrones (public transport, optional) | Geoapify Isoline API, `transit` mode (free plan: 3,000 credits a day, shared by all visitors) | `VITE_GEOAPIFY_API_KEY` |
 | Address search | Géoplateforme geocoding (IGN) | none |
 | Municipality contours | geo.api.gouv.fr | none |
 | Basemap | OpenStreetMap tiles via Leaflet | none |
 
-API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions).
+API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions). Without a Mapbox key the app explains that areas are unavailable; without a Geoapify key the public transport mode is hidden. Public transport areas are computed only for the opened institution, to protect the shared quota.
 
 ### Run locally
 
@@ -57,4 +57,4 @@ Prerequisites: Node.js 22.18 or later (the data script is TypeScript run directl
 ### Continuous integration and deployment
 
 - `.github/workflows/ci.yml` runs lint, unit tests, build and browser tests on every pull request.
-- `.github/workflows/deploy-pages.yml` runs lint and unit tests, prepares the data, then builds and deploys `main` to GitHub Pages, on every push and every Monday. Set the `VITE_MAPBOX_API_KEY` repository secret.
+- `.github/workflows/deploy-pages.yml` runs lint and unit tests, prepares the data, then builds and deploys `main` to GitHub Pages, on every push and every Monday. Set the `VITE_MAPBOX_API_KEY` and, optionally, `VITE_GEOAPIFY_API_KEY` repository secrets.

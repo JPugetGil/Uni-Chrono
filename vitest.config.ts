@@ -8,5 +8,7 @@ export default defineConfig({
     environment: 'node',
     restoreMocks: true,
     unstubGlobals: true,
+    // Clés factices : les fetchers refusent de partir sans clé
+    env: { VITE_MAPBOX_API_KEY: 'test-mapbox', VITE_GEOAPIFY_API_KEY: 'test-geoapify' },
   },
 })

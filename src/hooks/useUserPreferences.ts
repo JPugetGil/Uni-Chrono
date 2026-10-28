@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TransportMode, TRANSPORT_MODES } from '../types/transport';
+import { hasTransitKey } from '../geoapifyFetcher';
 
 export const useUserPreferences = () => {
   const [timeInMinutes, setTimeInMinutes] = useState<number>(() => {
@@ -16,7 +17,8 @@ export const useUserPreferences = () => {
   const [transportMode, setTransportMode] = useState<TransportMode>(() => {
     try {
       const saved = localStorage.getItem('transportMode');
-      const allowed = new Set<string>(TRANSPORT_MODES);
+      // « transit » mémorisé alors que la clé Geoapify n'est plus fournie : retour à la marche
+      const allowed = new Set<string>(TRANSPORT_MODES.filter((mode) => mode !== 'transit' || hasTransitKey));
       return saved && allowed.has(saved) ? (saved as TransportMode) : 'walking';
     } catch {
       return 'walking';

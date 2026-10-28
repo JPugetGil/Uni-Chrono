@@ -6,6 +6,7 @@ import { TransportMode } from '../types/transport';
 import { HousingStatus } from '../hooks/useHousing';
 import { isochroneAreaKm2 } from '../utils/geo';
 import { useFormatters } from '../i18n/useFormatters';
+import { IsochroneErrorKind } from '../isochroneError';
 
 export type ZoneStatus = 'pending' | 'ready' | 'error';
 
@@ -18,6 +19,10 @@ const MODE_ICONS: Record<TransportMode, React.ComponentType<{ className?: string
 
 interface ZoneSummaryProps {
   status: ZoneStatus;
+  /** Cause de l'échec (status « error ») */
+  error?: IsochroneErrorKind | null;
+  /** Service d'isochrones, nommé dans les messages d'erreur */
+  provider: string;
   isochrone?: Isochrone | null;
   transportMode: TransportMode;
   timeInMinutes: number;
@@ -40,6 +45,8 @@ const Stat: React.FC<{ label: string; value: string; hint?: string }> = ({ label
 /** Zone accessible : bandes de temps, surface, communes couvertes, loyer médian. */
 const ZoneSummary: React.FC<ZoneSummaryProps> = ({
   status,
+  error,
+  provider,
   isochrone,
   transportMode,
   timeInMinutes,
@@ -72,8 +79,8 @@ const ZoneSummary: React.FC<ZoneSummaryProps> = ({
       {status === 'error' && (
         <div className="mt-2 flex items-center gap-2 text-sm text-slate-700">
           <TriangleAlert aria-hidden className="size-4 shrink-0 text-red-700" />
-          <span className="flex-1">{t('zone.error')}</span>
-          {onRetry && (
+          <span className="flex-1">{t(`zone.errors.${error ?? 'failed'}`, { provider })}</span>
+          {onRetry && error !== 'auth' && (
             <Button size="sm" variant="secondary" onClick={onRetry}>
               {t('zone.retry')}
             </Button>
