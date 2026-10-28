@@ -184,7 +184,9 @@
         "overlays": "Calques",
         "crousLogements": "Résidences CROUS",
         "crousRestaurants": "Restaurants CROUS",
-        "crousHint": "Visibles à partir de l'échelle d'une agglomération."
+        "crousHint": "Visibles à partir de l'échelle d'une agglomération.",
+        "fallback": "Plan IGN indisponible ici : fond OpenStreetMap affiché",
+        "fallbackDismiss": "Fermer l'avis"
     },
     "crous": {
         "logement": "Résidence CROUS",

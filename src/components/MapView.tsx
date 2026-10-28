@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
@@ -13,8 +13,9 @@ import CommuneHighlight from './CommuneHighlight';
 import PlaceMarker from './PlaceMarker';
 import LayerSwitcher from './LayerSwitcher';
 import CrousMarkers from './CrousMarkers';
+import BaseLayerNotice from './BaseLayerNotice';
 import { usePersistentChoice } from '../hooks/usePersistentFlag';
-import { BASE_LAYERS, BaseLayer, Overlays } from '../types/layers';
+import { BASE_LAYERS, BaseLayer, Overlays, baseLayerFailing } from '../types/layers';
 
 // Fonds de carte : Plan IGN (Géoplateforme, lisible pour la France), ou OpenStreetMap
 // (sans sous-domaines a/b/c, déconseillés par la politique d'usage des tuiles OSM)
@@ -110,74 +111,117 @@ const MapView: React.FC<MapViewProps> = ({
   showZoomControl = true,
 }) => {
   const overlay = TRANSPORT_OVERLAYS[transportMode];
-  const [baseLayer, setBaseLayer] = usePersistentChoice<BaseLayer>('baseLayer', BASE_LAYERS, 'ign');
+  const [preferredBase, setPreferredBase] = usePersistentChoice<BaseLayer>('baseLayer', BASE_LAYERS, 'ign');
+  // Plan IGN en échec (hors de France, panne) : OpenStreetMap jusqu'au prochain choix, sans
+  // changer le fond enregistré
+  const [ignFailed, setIgnFailed] = useState(false);
+  const [fallbackNotice, setFallbackNotice] = useState(false);
+  const baseLayer: BaseLayer = ignFailed ? 'osm' : preferredBase;
+  const hideNotice = useCallback(() => setFallbackNotice(false), []);
+  const chooseBase = (base: BaseLayer) => {
+    setPreferredBase(base);
+    setIgnFailed(false);
+    setFallbackNotice(false);
+  };
+
+  // Tuiles du Plan IGN reçues et refusées depuis le début du chargement de la vue
+  const ignTiles = useRef({ loaded: 0, errors: 0 });
+  const ignEvents = useMemo(
+    () => ({
+      loading: () => {
+        ignTiles.current = { loaded: 0, errors: 0 };
+      },
+      tileload: () => {
+        ignTiles.current.loaded++;
+      },
+      tileerror: () => {
+        const tiles = ignTiles.current;
+        tiles.errors++;
+        if (baseLayerFailing(tiles.errors, tiles.loaded)) {
+          setIgnFailed(true);
+          setFallbackNotice(true);
+        }
+      },
+    }),
+    []
+  );
   const [overlays, setOverlays] = useState<Overlays>({ crousLogements: false, crousRestaurants: false });
 
   return (
-    <MapContainer
-      bounds={FRANCE_BOUNDS}
-      boundsOptions={{
-        paddingTopLeft: [insets.left + 16, insets.top + 16],
-        paddingBottomRight: [insets.right + 16, insets.bottom + 16],
-      }}
-      minZoom={3}
-      maxZoom={19}
-      maxBounds={[[-90, -180], [90, 180]]}
-      maxBoundsViscosity={1}
-      zoomControl={false}
-      preferCanvas
-      className="absolute inset-0 z-0"
-    >
-      {baseLayer === 'ign' ? (
-        <TileLayer key="ign" url={PLAN_IGN_URL} attribution={PLAN_IGN_ATTRIBUTION} maxZoom={19} noWrap />
-      ) : (
-        <TileLayer key="osm" url={OSM_URL} attribution={OSM_ATTRIBUTION} maxZoom={19} noWrap />
-      )}
-      {overlay && (
-        <TileLayer
-          key={transportMode}
-          url={overlay.url}
-          attribution={overlay.attribution}
-          zIndex={10}
-          opacity={0.9}
-          maxZoom={19}
-          noWrap
+    <>
+      <MapContainer
+        bounds={FRANCE_BOUNDS}
+        boundsOptions={{
+          paddingTopLeft: [insets.left + 16, insets.top + 16],
+          paddingBottomRight: [insets.right + 16, insets.bottom + 16],
+        }}
+        minZoom={3}
+        maxZoom={19}
+        maxBounds={[[-90, -180], [90, 180]]}
+        maxBoundsViscosity={1}
+        zoomControl={false}
+        preferCanvas
+        className="absolute inset-0 z-0"
+      >
+        {baseLayer === 'ign' ? (
+          <TileLayer
+            key="ign"
+            url={PLAN_IGN_URL}
+            attribution={PLAN_IGN_ATTRIBUTION}
+            maxZoom={19}
+            noWrap
+            eventHandlers={ignEvents}
+          />
+        ) : (
+          <TileLayer key="osm" url={OSM_URL} attribution={OSM_ATTRIBUTION} maxZoom={19} noWrap />
+        )}
+        {overlay && (
+          <TileLayer
+            key={transportMode}
+            url={overlay.url}
+            attribution={overlay.attribution}
+            zIndex={10}
+            opacity={0.9}
+            maxZoom={19}
+            noWrap
+          />
+        )}
+
+        <ZonesAttribution />
+        <IsochronePolygons
+          selected={!!selectedEtab}
+          selectedIsochrone={selectedIsochrone}
+          originIsochrone={originIsochrone}
+          compareZones={compareZones}
         />
-      )}
+        <CommuneHighlight code={highlightedCommune} />
 
-      <ZonesAttribution />
-      <IsochronePolygons
-        selected={!!selectedEtab}
-        selectedIsochrone={selectedIsochrone}
-        originIsochrone={originIsochrone}
-        compareZones={compareZones}
-      />
-      <CommuneHighlight code={highlightedCommune} />
+        <EtablissementMarkers
+          etablissements={filteredEtablissements}
+          selected={selectedEtab}
+          onSelect={onSelectEtab}
+        />
+        {place && place.kind !== 'position' && <PlaceMarker place={place} />}
 
-      <EtablissementMarkers
-        etablissements={filteredEtablissements}
-        selected={selectedEtab}
-        onSelect={onSelectEtab}
-      />
-      {place && place.kind !== 'position' && <PlaceMarker place={place} />}
+        {showZoomControl && <ZoomControl position="topright" />}
+        <LocateButton onLocated={onLocated} />
+        <LayerSwitcher base={baseLayer} onBaseChange={chooseBase} overlays={overlays} onOverlaysChange={setOverlays} />
+        <CrousMarkers logements={overlays.crousLogements} restaurants={overlays.crousRestaurants} />
+        <ScaleControl position="bottomright" imperial={false} />
 
-      {showZoomControl && <ZoomControl position="topright" />}
-      <LocateButton onLocated={onLocated} />
-      <LayerSwitcher base={baseLayer} onBaseChange={setBaseLayer} overlays={overlays} onOverlaysChange={setOverlays} />
-      <CrousMarkers logements={overlays.crousLogements} restaurants={overlays.crousRestaurants} />
-      <ScaleControl position="bottomright" imperial={false} />
-
-      <MapFocus
-        selected={selectedEtab}
-        selectedIsochrone={selectedIsochrone}
-        originIsochrone={originIsochrone}
-        compareZones={compareZones}
-        target={focusTarget}
-        insets={insets}
-      />
-      <MapResizeHandler />
-      <MapClickHandler onClick={() => onSelectEtab(null)} />
-    </MapContainer>
+        <MapFocus
+          selected={selectedEtab}
+          selectedIsochrone={selectedIsochrone}
+          originIsochrone={originIsochrone}
+          compareZones={compareZones}
+          target={focusTarget}
+          insets={insets}
+        />
+        <MapResizeHandler />
+        <MapClickHandler onClick={() => onSelectEtab(null)} />
+      </MapContainer>
+      {fallbackNotice && <BaseLayerNotice onDismiss={hideNotice} />}
+    </>
   );
 };
 

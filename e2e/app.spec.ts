@@ -298,6 +298,25 @@ test('fond de carte Plan IGN par défaut, OpenStreetMap au choix', async ({ page
   await expect.poll(() => tiles.includes('tile.openstreetmap.org')).toBe(true);
 });
 
+test('Plan IGN en échec : repli sur OpenStreetMap signalé, sans changer le fond enregistré', async ({ page }) => {
+  await mockApis(page, { ignTilesStatus: 404 });
+  const tiles: string[] = [];
+  page.on('request', (r) => tiles.push(new URL(r.url()).hostname));
+  await page.goto('./');
+
+  const notice = page.getByRole('status').filter({ hasText: 'Plan IGN indisponible ici : fond OpenStreetMap affiché' });
+  await expect(notice).toBeVisible();
+  await expect.poll(() => tiles.includes('tile.openstreetmap.org')).toBe(true);
+  await page.getByRole('button', { name: 'Fond de carte et calques' }).click();
+  await expect(page.getByRole('radio', { name: 'OpenStreetMap' })).toBeChecked();
+  // Le Plan IGN reste le fond préféré : il reviendra à la prochaine visite
+  expect(await page.evaluate(() => localStorage.getItem('baseLayer'))).not.toBe('osm');
+
+  await page.keyboard.press('Escape');
+  await notice.getByRole('button', { name: "Fermer l'avis" }).click();
+  await expect(notice).toHaveCount(0);
+});
+
 test('filtre par formation depuis la recherche', async ({ page }) => {
   await mockApis(page);
   await page.goto('./');

@@ -15,7 +15,7 @@ Uni-Chrono shows where you can study after the baccalauréat in France (every pr
 - Search by programme ("BTS - Services informatiques aux organisations"…) to keep only the sites offering it.
 - Favourites (up to 4) compared side by side: area, municipalities, median rent, CROUS residences, programmes.
 - Shareable links: the URL carries the opened site, the starting point, the mode, the duration and the filters.
-- IGN map (default) or OpenStreetMap basemap; CROUS residences and restaurants layers.
+- IGN map (default) or OpenStreetMap basemap, with an automatic switch to OpenStreetMap (and a short notice) where the IGN map fails: outside its coverage (France, overseas territories and border areas) or during an outage; CROUS residences and restaurants layers.
 - Desktop side panel, mobile bottom sheet; installable as a PWA.
 
 ### Data

@@ -114,6 +114,8 @@ export interface MockOptions {
   ignRateLimited?: number;
   /** Faux Geoapify en échec (par exemple 401 : clé refusée) */
   geoapifyStatus?: number;
+  /** Tuiles du Plan IGN en échec (404 : hors de la couverture du Plan IGN) */
+  ignTilesStatus?: number;
 }
 
 /**
@@ -140,7 +142,19 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
     (url) =>
       /tile\.openstreetmap\.org|waymarkedtrails\.org|openrailwaymap\.org/.test(url.hostname) ||
       (url.hostname === 'data.geopf.fr' && url.pathname === '/wmts'),
-    (route) => route.fulfill({ status: 200, contentType: 'image/png', body: EMPTY_PNG })
+    (route) => {
+      const ignTile = new URL(route.request().url()).hostname === 'data.geopf.fr';
+      if (ignTile && options.ignTilesStatus && options.ignTilesStatus !== 200) {
+        // Comme le vrai Plan IGN hors de sa couverture : erreur XML, en-tête CORS présent
+        return route.fulfill({
+          status: options.ignTilesStatus,
+          contentType: 'text/xml',
+          headers: { 'access-control-allow-origin': '*' },
+          body: '<ExceptionReport><Exception exceptionCode="TileOutOfRange"/></ExceptionReport>',
+        });
+      }
+      return route.fulfill({ status: 200, contentType: 'image/png', body: EMPTY_PNG });
+    }
   );
 
   // Données préparées (public/data), servies par l'application

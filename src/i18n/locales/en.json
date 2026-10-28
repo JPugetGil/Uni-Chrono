@@ -184,7 +184,9 @@
         "overlays": "Layers",
         "crousLogements": "CROUS residences",
         "crousRestaurants": "CROUS restaurants",
-        "crousHint": "Shown from city scale."
+        "crousHint": "Shown from city scale.",
+        "fallback": "IGN map unavailable here: showing OpenStreetMap",
+        "fallbackDismiss": "Dismiss"
     },
     "crous": {
         "logement": "CROUS residence",
