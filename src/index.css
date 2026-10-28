@@ -42,28 +42,18 @@
 }
 
 /*
- * Pastilles centrées sur la partie de la carte non couverte par les panneaux.
- * Couche components : les utilitaires Tailwind peuvent les ajuster (mobile).
+ * Pastille centrée sur la partie de la carte non couverte par les panneaux.
+ * Couche components : les utilitaires Tailwind peuvent l'ajuster (mobile).
  */
 @layer components {
-  .map-anchor-top,
-  .map-anchor-bottom {
+  .map-anchor-top {
     position: absolute;
     left: var(--inset-left, 0px);
     right: 0;
     margin-inline: auto;
     width: max-content;
     max-width: calc(100% - var(--inset-left, 0px) - 24px);
-  }
-
-  .map-anchor-top {
     top: calc(var(--inset-top, 0px) + 12px);
-  }
-
-  .map-anchor-bottom {
-    /* au-dessus de l'échelle et des attributions */
-    bottom: calc(var(--sheet-offset, 0px) + 52px);
-    transition: bottom 200ms ease;
   }
 }
 

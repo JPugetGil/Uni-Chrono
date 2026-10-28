@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { TransportMode, TRANSPORT_MODES } from '../types/transport';
-import { hasTransitKey } from '../geoapifyFetcher';
+import { isModeAvailable } from '../isochroneProvider';
 
 /** Mode et durée mémorisés ; `initial` (lien partagé) a priorité sur la mémoire */
 export const useUserPreferences = (initial: { mode?: TransportMode; duree?: number } = {}) => {
@@ -9,7 +9,7 @@ export const useUserPreferences = (initial: { mode?: TransportMode; duree?: numb
     try {
       const saved = localStorage.getItem('timeInMinutes');
       const n = saved ? Number(saved) : NaN;
-      // Mapbox plafonne les isochrones à 60 min
+      // Durées proposées : une heure au plus
       return Number.isInteger(n) && n >= 1 && n <= 60 ? n : 15;
     } catch {
       return 15;
@@ -20,8 +20,8 @@ export const useUserPreferences = (initial: { mode?: TransportMode; duree?: numb
     if (initial.mode) return initial.mode;
     try {
       const saved = localStorage.getItem('transportMode');
-      // « transit » mémorisé alors que la clé Geoapify n'est plus fournie : retour à la marche
-      const allowed = new Set<string>(TRANSPORT_MODES.filter((mode) => mode !== 'transit' || hasTransitKey));
+      // Vélo ou transports mémorisés alors que la clé Geoapify n'est plus fournie : retour à la marche
+      const allowed = new Set<string>(TRANSPORT_MODES.filter(isModeAvailable));
       return saved && allowed.has(saved) ? (saved as TransportMode) : 'walking';
     } catch {
       return 'walking';

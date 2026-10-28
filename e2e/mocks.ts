@@ -110,11 +110,16 @@ const square = (lon: number, lat: number, minutes: number) => {
 export interface MockOptions {
   /** Nombre de réponses en erreur 500 avant que les établissements se chargent */
   etablissementsFailures?: number;
-  /** Faux Mapbox en échec : statut HTTP lisible, ou « blocked » comme une vraie clé refusée (401 sans CORS) */
-  mapboxStatus?: number | 'blocked';
+  /** Nombre de premières requêtes d'isochrones IGN refusées (429, limite de débit) */
+  ignRateLimited?: number;
+  /** Faux Geoapify en échec (par exemple 401 : clé refusée) */
+  geoapifyStatus?: number;
 }
 
-/** Requêtes d'isochrones reçues par le faux Mapbox */
+/**
+ * Requêtes d'isochrones reçues : profil IGN (pedestrian, car), une durée par
+ * requête, ou mode Geoapify (bicycle, approximated_transit), toutes les durées
+ */
 export interface IsochroneCall {
   profile: string;
   minutes: number[];
@@ -123,6 +128,7 @@ export interface IsochroneCall {
 export const mockApis = async (page: Page, options: MockOptions = {}) => {
   const isochroneCalls: IsochroneCall[] = [];
   let failures = options.etablissementsFailures ?? 0;
+  let ignRateLimited = options.ignRateLimited ?? 0;
 
   const json = (route: Route, body: unknown) =>
     route.fulfill({ status: 200, contentType: 'application/json', body: JSON.stringify(body) });
@@ -160,26 +166,6 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
   );
 
   await page.route(
-    (url) => url.hostname === 'api.mapbox.com' && url.pathname.startsWith('/isochrone/'),
-    (route) => {
-      const url = new URL(route.request().url());
-      const [, , , , profile, coordinates] = url.pathname.split('/');
-      const [lon, lat] = coordinates.split(',').map(Number);
-      const minutes = (url.searchParams.get('contours_minutes') ?? '').split(',').map(Number);
-      isochroneCalls.push({ profile, minutes });
-      if (options.mapboxStatus === 'blocked') return route.abort('failed');
-      if (options.mapboxStatus && options.mapboxStatus !== 200) {
-        return route.fulfill({ status: options.mapboxStatus, contentType: 'application/json', body: '{"message":"Not Authorized"}' });
-      }
-      // Ordre décroissant, comme une réponse Mapbox possible : l'app ne doit pas en dépendre
-      const features = [...minutes]
-        .sort((a, b) => b - a)
-        .map((m) => ({ type: 'Feature', properties: { contour: m }, geometry: { type: 'Polygon', coordinates: square(lon, lat, m) } }));
-      return json(route, { type: 'FeatureCollection', features });
-    }
-  );
-
-  await page.route(
     (url) => url.hostname === 'geo.api.gouv.fr' && url.pathname.startsWith('/communes/'),
     (route) => {
       const code = new URL(route.request().url()).pathname.split('/').pop();
@@ -194,32 +180,54 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
     (route) => json(route, PLACES)
   );
 
-  // Geoapify (transports en commun) : îlots autour de deux arrêts par durée
+  // Geoapify (vélo, transports en commun) : îlots autour de deux arrêts par durée, ordre décroissant
+  // (l'app ne doit pas dépendre de l'ordre)
   await page.route(
     (url) => url.hostname === 'api.geoapify.com' && url.pathname === '/v1/isoline',
     (route) => {
       const url = new URL(route.request().url());
       const lat = Number(url.searchParams.get('lat'));
       const lon = Number(url.searchParams.get('lon'));
+      const mode = url.searchParams.get('mode') ?? '';
       const ranges = (url.searchParams.get('range') ?? '').split(',').map(Number);
-      isochroneCalls.push({ profile: 'transit', minutes: ranges.map((r) => r / 60) });
-      const features = ranges.map((range) => ({
-        type: 'Feature',
-        properties: { range, mode: 'transit' },
-        geometry: { type: 'MultiPolygon', coordinates: [square(lon, lat, range / 120), square(lon + 0.03, lat, range / 240)] },
-      }));
+      isochroneCalls.push({ profile: mode, minutes: ranges.map((r) => r / 60) });
+      if (options.geoapifyStatus && options.geoapifyStatus !== 200) {
+        return route.fulfill({
+          status: options.geoapifyStatus,
+          contentType: 'application/json',
+          headers: { 'access-control-allow-origin': '*' },
+          body: '{"statusCode":401,"error":"Unauthorized","message":"Invalid apiKey"}',
+        });
+      }
+      const features = [...ranges]
+        .sort((a, b) => b - a)
+        .map((range) => ({
+          type: 'Feature',
+          properties: { range, mode },
+          geometry: { type: 'MultiPolygon', coordinates: [square(lon, lat, range / 120), square(lon + 0.03, lat, range / 240)] },
+        }));
       return json(route, { type: 'FeatureCollection', features });
     }
   );
 
-  // IGN (repli sans clé Mapbox ou clé refusée) : une durée par requête
+  // IGN (marche, voiture) : une durée par requête ; 429 comme la vraie limite de débit,
+  // dont l'en-tête Retry-After n'est pas exposé au navigateur
   await page.route(
     (url) => url.hostname === 'data.geopf.fr' && url.pathname === '/navigation/isochrone',
     (route) => {
       const url = new URL(route.request().url());
       const [lon, lat] = (url.searchParams.get('point') ?? '').split(',').map(Number);
       const minutes = Number(url.searchParams.get('costValue')) / 60;
-      isochroneCalls.push({ profile: `ign-${url.searchParams.get('profile')}`, minutes: [minutes] });
+      isochroneCalls.push({ profile: url.searchParams.get('profile') ?? '', minutes: [minutes] });
+      if (ignRateLimited > 0) {
+        ignRateLimited--;
+        return route.fulfill({
+          status: 429,
+          contentType: 'application/json',
+          headers: { 'access-control-allow-origin': '*', 'retry-after': '4' },
+          body: '{"error":{"code":429,"message":"Too Many Requests"}}',
+        });
+      }
       return json(route, { geometry: { type: 'Polygon', coordinates: square(lon, lat, minutes) } });
     }
   );

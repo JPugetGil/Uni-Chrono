@@ -24,6 +24,8 @@ interface OriginPanelProps {
   timeInMinutes: number;
   transportMode: TransportMode;
   onSelectEtab: (id: string) => void;
+  /** Réglages de trajet (mode, durée) */
+  travelSettings?: React.ReactNode;
 }
 
 /** Point de départ (adresse, position) : établissements accessibles depuis ce point */
@@ -40,6 +42,7 @@ const OriginPanel: React.FC<OriginPanelProps> = ({
   timeInMinutes,
   transportMode,
   onSelectEtab,
+  travelSettings,
 }) => {
   const { t } = useTranslation();
   const [showAll, setShowAll] = useState(false);
@@ -52,6 +55,8 @@ const OriginPanel: React.FC<OriginPanelProps> = ({
         <MapPin aria-hidden className="mt-0.5 size-4 shrink-0 text-slate-700" />
         <span>{t('origin.title', { label })}</span>
       </h2>
+
+      {travelSettings}
 
       {!active && (
         <Button size="sm" onClick={onActivate} className="h-auto self-start py-1.5 text-left">

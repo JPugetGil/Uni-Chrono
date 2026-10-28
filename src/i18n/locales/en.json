@@ -10,16 +10,16 @@
         "help": "Show help",
         "sheetExpand": "Expand panel",
         "sheetCollapse": "Collapse panel",
-        "summary": "{{time}} min {{mode}} · {{total}} institutions"
+        "summary_one": "{{total}} institution",
+        "summary_other": "{{total}} institutions"
     },
     "language": {
         "label": "Language"
     },
     "onboarding": {
         "title": "How does it work?",
-        "step1": "Pick a mode of transport and a duration.",
-        "step2": "Search for a city or an address, or zoom in on the map.",
-        "step3": "Click an institution to see the area you can reach and the rents around it, or compute the areas of every visible institution.",
+        "step1": "Search for a school or a programme, or click an institution on the map.",
+        "step2": "See the area you can reach on foot, by bike, by car or by public transport, and the rents around it.",
         "dismiss": "Got it"
     },
     "loading": {
@@ -28,8 +28,8 @@
         "retry": "Retry"
     },
     "search": {
-        "label": "Search for an institution, a city or an address",
-        "placeholder": "Institution, city or address",
+        "label": "Search for a school, a programme, a city or an address",
+        "placeholder": "School, programme, city or address",
         "clear": "Clear search",
         "filterBy": "Institutions whose name contains “{{query}}”",
         "groupEtablissements": "Institutions",
@@ -60,7 +60,7 @@
         "by_walking": "on foot",
         "by_cycling": "by bike",
         "by_transit": "by public transport",
-        "transitHint": "Public transport: an estimate from bus, tram and metro lines (Geoapify, without timetables). The area is computed for the institution you open."
+        "transitHint": "Public transport: an estimate from bus, tram and metro lines (Geoapify, without timetables)."
     },
     "filters": {
         "title": "Filters",
@@ -81,22 +81,12 @@
         "lycee": "High school or CFA (BTS, prépa…)",
         "other": "Other",
         "title": "Legend",
-        "cluster": "Group of institutions: click to zoom in",
-        "zone": "Computed reachable areas"
+        "cluster": "Group of institutions: click to zoom in"
     },
     "map": {
         "locate": "My location",
         "locating": "Locating…",
         "locateError": "Unable to retrieve your location",
-        "compute_one": "Compute the area of {{count}} institution",
-        "compute_other": "Compute the areas of {{count}} institutions",
-        "computing": "Computing areas… {{done}}/{{total}}",
-        "computeDone_one": "{{count}} area computed",
-        "computeDone_other": "{{count}} areas computed",
-        "computeDonePartial": "{{done}}/{{total}} areas computed: retry for the rest",
-        "allComputed": "Visible areas already computed",
-        "noneVisible": "No institution in view",
-        "computeTooFar": "Zoom in (view under 100 km) to compute areas",
         "cluster_one": "{{count}} institution: zoom in",
         "cluster_other": "Group of {{count}} institutions: zoom in",
         "colocated": "{{count}} institutions at this location"
@@ -182,7 +172,7 @@
         "isochrones": "Travel times",
         "geocoding": "Addresses",
         "generatedAt": "Data prepared on {{date}}",
-        "isochronesDetail": "Mapbox; public transport: Geoapify",
+        "isochronesDetail": "IGN Géoplateforme (walking, car); Geoapify (cycling, public transport)",
         "crous": "CROUS residences and restaurants",
         "crousDetail": "Cnous, Licence Ouverte, updated {{date}}"
     },

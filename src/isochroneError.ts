@@ -1,5 +1,5 @@
 /**
- * Erreurs des services d'isochrones (Mapbox, Geoapify), classées pour
+ * Erreurs des services d'isochrones (IGN, Geoapify), classées pour
  * afficher un message utile et ne relancer que ce qui peut réussir.
  * - unconfigured : clé absente au build
  * - auth : clé refusée (401, 403)

@@ -45,7 +45,7 @@ const DataSources: React.FC = () => {
           label={t('sources.crous')}
           detail={t('sources.crousDetail', { date: date(meta?.crous?.processed) })}
         />
-        <Source href="https://docs.mapbox.com/api/navigation/isochrone/" label={t('sources.isochrones')} detail={t('sources.isochronesDetail')} />
+        <Source href="https://geoservices.ign.fr/documentation/services/services-geoplateforme/itineraire" label={t('sources.isochrones')} detail={t('sources.isochronesDetail')} />
         <Source href="https://geoservices.ign.fr/documentation/services/services-geoplateforme/geocodage" label={t('sources.geocoding')} detail="IGN" />
       </ul>
       {meta && <p className="mt-2 text-slate-500">{t('sources.generatedAt', { date: date(meta.generatedAt) })}</p>}

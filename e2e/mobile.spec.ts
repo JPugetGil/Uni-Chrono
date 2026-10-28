@@ -17,7 +17,7 @@ test('le volet s’ouvre à mi-hauteur sur une fiche et se replie au retour', as
   // Mobile : pas de boutons de zoom, le volet est replié sur son résumé
   await expect(page.getByRole('button', { name: 'Zoom in' })).toHaveCount(0);
   const explore = page.getByRole('region', { name: 'Uni-Chrono' });
-  await expect(explore).toContainText('15 min à pied · 6 établissements');
+  await expect(explore).toContainText('6 établissements');
   expect(await sheetHeight(explore)).toBe(68);
 
   await page.getByRole('combobox', { name: /Rechercher/ }).fill('ecole normale');
@@ -41,7 +41,7 @@ test('la poignée fait passer le volet d’un cran à l’autre', async ({ page 
   await expect.poll(() => sheetHeight(sheet)).toBe(Math.round(844 * 0.46));
   await sheet.getByRole('button', { name: 'Agrandir le panneau' }).click();
   await expect.poll(() => sheetHeight(sheet)).toBe(844 - 64);
-  await expect(sheet.getByRole('radio', { name: '15 minutes' })).toBeChecked();
+  await expect(sheet.getByRole('heading', { level: 2, name: 'Filtres' })).toBeInViewport();
   await sheet.getByRole('button', { name: 'Réduire le panneau' }).click();
   await expect.poll(() => sheetHeight(sheet)).toBe(68);
 });

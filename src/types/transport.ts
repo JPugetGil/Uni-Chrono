@@ -1,6 +1,6 @@
 /**
  * Modes de transport supportés.
- * 'transit' (transports en commun) est fourni par Geoapify, les autres par Mapbox.
+ * Marche et voiture : IGN ; vélo et transports en commun : Geoapify (isochroneProvider).
  */
 export type TransportMode = 'walking' | 'cycling' | 'driving' | 'transit';
 

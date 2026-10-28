@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Etablissement, ETABLISSEMENT_CATEGORIES } from '../types/etablissement';
-import { categoryColors, colors } from '../design-system/tokens';
+import { categoryColors } from '../design-system/tokens';
 import { useFormatters } from '../i18n/useFormatters';
 
 interface LegendProps {
@@ -47,14 +47,6 @@ const Legend: React.FC<LegendProps> = ({ etablissements }) => {
           12
         </span>
         <span>{t('legend.cluster')}</span>
-      </li>
-      <li className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="inline-block h-3.5 w-5 shrink-0 rounded-sm border"
-          style={{ borderColor: colors.primary, background: `${colors.primary}33` }}
-        />
-        <span>{t('legend.zone')}</span>
       </li>
     </ul>
   );

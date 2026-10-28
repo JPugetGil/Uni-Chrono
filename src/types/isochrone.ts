@@ -17,8 +17,8 @@ export interface IsochroneBand {
  */
 export interface Isochrone {
   /**
-   * Coordinates forming the isochrone: a single polygon ring (Mapbox),
-   * or an array of polygon rings (transit isochrones are multi-polygons)
+   * Coordinates forming the isochrone: a single polygon ring, or an array of
+   * polygon rings (multi-polygons: islands around transit stops, detached areas)
    */
   coordinates: Coordinate[] | Coordinate[][];
 
@@ -42,7 +42,8 @@ export interface Isochrone {
 /**
  * Durées des bandes affichées pour une durée maximale : tiers arrondis à 5 min
  * (15 → 5/10/15, 45 → 15/30/45), moitié en dessous de 15 min, une seule bande
- * pour les très courtes durées. Mapbox accepte jusqu'à 4 contours par requête.
+ * pour les très courtes durées. L'IGN calcule une durée par requête, Geoapify
+ * toutes les durées en une.
  */
 export const bandMinutes = (total: number): number[] => {
   if (total >= 15) {

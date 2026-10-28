@@ -16,8 +16,7 @@ import { ZoneStatus } from './components/ZoneSummary';
 import IconButton from './design-system/IconButton';
 import Chip from './design-system/Chip';
 import { useEtablissements } from './hooks/useEtablissements';
-import { useIsochrones } from './hooks/useIsochrones';
-import { useTransitIsochrone } from './hooks/useTransitIsochrone';
+import { useZone } from './hooks/useZone';
 import { useUserPreferences } from './hooks/useUserPreferences';
 import { useDocumentTitle } from './hooks/useDocumentTitle';
 import { useMediaQuery, useViewportHeight } from './hooks/useMediaQuery';
@@ -27,19 +26,16 @@ import { Place } from './geocodingFetcher';
 import { Etablissement } from './types/etablissement';
 import { Filters, etabId, matchesFilters } from './utils/filters';
 import { boundsOf } from './utils/geo';
-import { hasTransitKey } from './geoapifyFetcher';
-import { IsochroneErrorKind } from './isochroneError';
-import { PROVIDER_NAMES, batchAllowed, zoneProviderFor } from './isochroneProvider';
+import { PROVIDER_NAMES, availableModes, zoneProviderFor } from './isochroneProvider';
 import { parseUrlState, serializeUrlState } from './utils/urlState';
 import { reachableEtablissements } from './utils/reachable';
-import { useOriginIsochrone } from './hooks/useOriginIsochrone';
 import OriginPanel from './components/OriginPanel';
 import FavoritesSection from './components/FavoritesSection';
 import FavoriteButton from './components/FavoriteButton';
 import CompareView from './components/CompareView';
 import { MAX_FAVORITES, useFavorites } from './hooks/useFavorites';
 import { useZones } from './hooks/useZones';
-import { TRANSPORT_MODES } from './types/transport';
+import { colors } from './design-system/tokens';
 
 /** Largeur du panneau latéral (bureau) et marge autour */
 const PANEL_WIDTH = 380;
@@ -62,15 +58,11 @@ function App() {
   const viewportHeight = useViewportHeight();
 
   // Lien partagé : établissement, trajet et filtres lus une fois dans l'URL
-  const [initialUrl] = useState(() =>
-    parseUrlState(window.location.search, TRANSPORT_MODES.filter((m) => m !== 'transit' || hasTransitKey))
-  );
+  const [initialUrl] = useState(() => parseUrlState(window.location.search, availableModes()));
   const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences(initialUrl);
   const { etablissementsGeoJSON: etablissements, status: etabStatus, retry } = useEtablissements();
-  const { isochrones, requestIsochrones, statusById, pendingCount, batchTotal, batchFailed } = useIsochrones(timeInMinutes, transportMode);
 
-  // Établissement survolé (marqueur) et sélectionné (clic, recherche)
-  const [hoveredEtabId, setHoveredEtabId] = useState<string | null>(null);
+  // Établissement sélectionné (clic, recherche)
   const [selectedEtabId, setSelectedEtabId] = useState<string | null>(initialUrl.etab ?? null);
   const [filters, setFilters] = useState<Filters>(initialUrl.filters);
   // Cadrage demandé par la recherche ou un filtre géographique
@@ -111,26 +103,23 @@ function App() {
     [etablissements, filters]
   );
 
-  // Mode transit (Geoapify) : isochrone calculée à la demande pour la sélection
-  const isTransit = transportMode === 'transit';
   const selectedEtab = useMemo(
     () => (selectedEtabId ? etablissements?.find((e) => etabId(e) === selectedEtabId) ?? null : null),
     [etablissements, selectedEtabId]
   );
-  const transit = useTransitIsochrone(selectedEtab, timeInMinutes, isTransit);
-  const displayedIsochrones = useMemo(
-    () => (isTransit ? (transit.isochrone ? [transit.isochrone] : []) : isochrones),
-    [isTransit, transit.isochrone, isochrones]
-  );
 
-  // Service d'isochrones du mode choisi (Mapbox, IGN sans clé, Geoapify), s'il y en a un
-  const zoneProvider = zoneProviderFor(transportMode);
-  const zonesConfigured = zoneProvider !== null;
-  const providerName = PROVIDER_NAMES[zoneProvider ?? (transportMode === 'transit' ? 'geoapify' : 'mapbox')];
+  // Service d'isochrones du mode choisi : IGN (marche, voiture) ou Geoapify (vélo, transports)
+  const providerName = PROVIDER_NAMES[zoneProviderFor(transportMode)];
 
-  // Établissements accessibles depuis le point de départ (adresse, position)
+  // Zone de l'établissement ouvert, calculée à l'ouverture de sa fiche
+  const selectedZone = useZone(selectedEtab?.coordonnees ?? null, timeInMinutes, transportMode, {
+    color: selectedEtab?.color || '#2a78d6',
+    etablissementId: selectedEtabId ?? undefined,
+  });
+
+  // Établissements accessibles depuis le point de départ (adresse, position), sur demande
   const origin = useMemo(() => (place ? { lat: place.lat, lon: place.lon } : null), [place]);
-  const originZone = useOriginIsochrone(origin, timeInMinutes, transportMode, originActive && zonesConfigured);
+  const originZone = useZone(origin, timeInMinutes, transportMode, { enabled: originActive, color: colors.origin });
   const reachable = useMemo(
     () => (originZone.isochrone && origin ? reachableEtablissements(filteredEtablissements, originZone.isochrone, origin) : null),
     [originZone.isochrone, origin, filteredEtablissements]
@@ -140,24 +129,9 @@ function App() {
     [reachable, reachableOnly, filteredEtablissements]
   );
 
-  // La sélection d'un établissement déclenche le calcul de son isochrone si absente
-  useEffect(() => {
-    if (selectedEtab && !isTransit && zonesConfigured) requestIsochrones([selectedEtab]);
-  }, [selectedEtab, isTransit, zonesConfigured, requestIsochrones]);
-
-  const selectedIsochrone = selectedEtabId
-    ? displayedIsochrones.find((iso) => iso.etablissementId === selectedEtabId) ?? null
-    : null;
-  const selectedRequest = selectedEtabId ? statusById[selectedEtabId] : undefined;
-  const zoneError: IsochroneErrorKind | null = !zonesConfigured
-    ? 'unconfigured'
-    : isTransit
-      ? transit.error
-      : selectedRequest && selectedRequest !== 'pending'
-        ? selectedRequest
-        : null;
-  const zoneStatus: ZoneStatus =
-    selectedIsochrone && selectedIsochrone.coordinates.length > 0 ? 'ready' : zoneError ? 'error' : 'pending';
+  const selectedIsochrone = selectedZone.isochrone;
+  const zoneError = selectedZone.error;
+  const zoneStatus: ZoneStatus = selectedIsochrone ? 'ready' : zoneError ? 'error' : 'pending';
 
   const selectEtab = useCallback(
     (id: string | null) => {
@@ -303,7 +277,8 @@ function App() {
       zoneStatus={zoneStatus}
       zoneError={zoneError}
       zoneProvider={providerName}
-      onRetryZone={isTransit || !zonesConfigured ? undefined : () => requestIsochrones([selectedEtab])}
+      // Clé absente ou refusée : réessayer ne changerait rien
+      onRetryZone={zoneError === 'unconfigured' || zoneError === 'auth' ? undefined : selectedZone.retry}
       transportMode={transportMode}
       timeInMinutes={timeInMinutes}
       onClose={() => selectEtab(null)}
@@ -337,7 +312,6 @@ function App() {
       onboardingVisible={!onboardingDone}
       onDismissOnboarding={() => setOnboardingDone(true)}
       onShowHelp={() => setOnboardingDone(false)}
-      travelSettings={travelSettings}
       favoritesSection={
         <FavoritesSection
           favorites={favoriteEtabs}
@@ -353,7 +327,7 @@ function App() {
             active={originActive}
             onActivate={() => setOriginActive(true)}
             loading={originZone.loading}
-            error={zonesConfigured ? originZone.error : 'unconfigured'}
+            error={originZone.error}
             provider={providerName}
             reachable={reachable}
             reachableOnly={reachableOnly}
@@ -361,6 +335,7 @@ function App() {
             timeInMinutes={timeInMinutes}
             transportMode={transportMode}
             onSelectEtab={selectEtab}
+            travelSettings={travelSettings}
           />
         )
       }
@@ -376,27 +351,16 @@ function App() {
   return (
     <div className="relative h-dvh w-full overflow-hidden" style={cssVars}>
       <MapView
-        etablissements={etablissements ?? []}
         filteredEtablissements={mapEtablissements}
-        isochrones={displayedIsochrones}
+        selectedIsochrone={selectedIsochrone}
         originIsochrone={selectedEtab ? null : originZone.isochrone}
         compareZones={selectedEtab ? undefined : compareZones}
         onLocated={(lat, lon) =>
           selectPlace({ id: 'position', label: t('origin.myPosition'), context: '', kind: 'position', lat, lon })
         }
-        filters={filters}
         transportMode={transportMode}
-        hoveredEtabId={hoveredEtabId}
         selectedEtab={selectedEtab}
-        onHoverEtab={setHoveredEtabId}
         onSelectEtab={selectEtab}
-        // Calcul en lot avec Mapbox seulement (quotas partagés ailleurs), pas avec le volet plein écran (mobile)
-        onRequestIsochrones={
-          batchAllowed(transportMode) && !(isMobile && sheetSnap === 'full') ? requestIsochrones : undefined
-        }
-        isochronesPending={pendingCount}
-        isochronesBatchTotal={batchTotal}
-        isochronesBatchFailed={batchFailed}
         focusTarget={focusTarget}
         insets={insets}
         place={place}
@@ -422,11 +386,7 @@ function App() {
                 </p>
               ) : (
                 <p className="truncate text-sm font-semibold text-slate-900">
-                  {t('panel.summary', {
-                    time: timeInMinutes,
-                    mode: t(`transport.by_${transportMode}`),
-                    total: fmt.integer(mapEtablissements.length),
-                  })}
+                  {t('panel.summary', { count: mapEtablissements.length, total: fmt.integer(mapEtablissements.length) })}
                 </p>
               )
             }

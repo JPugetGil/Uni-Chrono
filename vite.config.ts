@@ -20,17 +20,6 @@ export default defineConfig({
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
-            urlPattern: /^https:\/\/api\.mapbox\.com\/.*/i,
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'mapbox-api',
-              expiration: {
-                maxEntries: 40,
-                maxAgeSeconds: 60 * 60
-              }
-            }
-          },
-          {
             // Données préparées au build (public/data) : servies du cache, rafraîchies en arrière-plan
             urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.includes('/data/'),
             handler: 'StaleWhileRevalidate',
@@ -58,13 +47,35 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/api\.geoapify\.com\/.*/i,
-            handler: 'NetworkFirst',
+            // Zones à pied et en voiture (IGN) : le réseau change peu, une zone sert un mois
+            urlPattern: /^https:\/\/data\.geopf\.fr\/navigation\/isochrone.*/i,
+            handler: 'CacheFirst',
             options: {
-              cacheName: 'geoapify-api',
+              cacheName: 'ign-isochrones',
               expiration: {
-                maxEntries: 40,
-                maxAgeSeconds: 60 * 60
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 30
+              },
+              cacheableResponse: {
+                statuses: [200]
+              }
+            }
+          },
+          {
+            // Zones à vélo et en transports (Geoapify, quota partagé) : la demande d'un
+            // point est servie du cache une semaine. Les réponses 202 (calcul en cours)
+            // et les interrogations par identifiant ne sont pas gardées.
+            urlPattern: ({ url }) =>
+              url.hostname === 'api.geoapify.com' && url.pathname === '/v1/isoline' && url.searchParams.has('lat'),
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'geoapify-isolines',
+              expiration: {
+                maxEntries: 100,
+                maxAgeSeconds: 60 * 60 * 24 * 7
+              },
+              cacheableResponse: {
+                statuses: [200]
               }
             }
           },

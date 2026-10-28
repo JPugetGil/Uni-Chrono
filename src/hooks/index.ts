@@ -1,4 +1,4 @@
 export { useEtablissements } from './useEtablissements';
-export { useIsochrones } from './useIsochrones';
+export { useZone } from './useZone';
 export { useUserPreferences } from './useUserPreferences';
 export { useDocumentTitle } from './useDocumentTitle';

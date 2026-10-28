@@ -12,6 +12,21 @@ const searchAndPick = async (page: Page, query: string, option: RegExp) => {
   await page.getByRole('listbox').getByRole('option', { name: option }).click();
 };
 
+/** Requêtes IGN attendues pour une zone : une par bande */
+const ign = (profile: string, minutes: number[]) => minutes.map((m) => ({ profile, minutes: [m] }));
+
+/**
+ * Clics rapprochés sur des réglages de trajet (étiquettes des boutons), dans
+ * la même tâche : entre deux actions Playwright, la trace peut dépasser l'attente
+ */
+const clickSettings = (page: Page, labels: string[]) =>
+  page.evaluate((names) => {
+    for (const name of names) document.querySelector<HTMLInputElement>(`input[type="radio"][aria-label="${name}"]`)?.click();
+  }, labels);
+
+const zoneBands = (page: Page, name: string) =>
+  page.getByRole('region', { name }).getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem');
+
 const legendCount = (page: Page, label: string) =>
   page.getByRole('region', { name: 'Légende' }).getByRole('listitem').filter({ hasText: label });
 
@@ -46,7 +61,7 @@ test('recherche un établissement et affiche sa zone, ses bandes et les loyers',
   await expect(zone).toContainText('Communes2');
   // Médiane de 16,7 et 16,8 €/m²
   await expect(zone).toContainText('16,8 €/m²');
-  expect(isochroneCalls).toEqual([{ profile: 'walking', minutes: [5, 10, 15] }]);
+  expect(isochroneCalls).toEqual(ign('pedestrian', [5, 10, 15]));
 
   const housing = page.getByRole('region', { name: 'Se loger dans la zone' });
   const rows = housing.getByRole('list').getByRole('button');
@@ -61,20 +76,43 @@ test('recherche un établissement et affiche sa zone, ses bandes et les loyers',
   await expect(rows.nth(0)).toHaveAttribute('aria-pressed', 'true');
 });
 
-test('changer la durée depuis la fiche recalcule la zone avec de nouvelles bandes', async ({ page }) => {
+test('changer la durée depuis la fiche recalcule la zone une fois le réglage choisi', async ({ page }) => {
   const { isochroneCalls } = await mockApis(page);
   await page.goto('./');
 
   await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
-  await expect(page.getByRole('region', { name: 'En 15 min à pied' })).toBeVisible();
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
 
-  await page.getByRole('radio', { name: '30 minutes' }).check({ force: true });
-  await page.getByRole('radio', { name: 'Vélo' }).check({ force: true });
+  // Deux clics rapprochés : seul le réglage final est calculé (vélo, Geoapify)
+  await clickSettings(page, ['30 minutes', 'Vélo']);
 
-  await expect(
-    page.getByRole('region', { name: 'En 30 min à vélo' }).getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem')
-  ).toHaveText(['≤ 10 min', '≤ 20 min', '≤ 30 min']);
-  expect(isochroneCalls.at(-1)).toEqual({ profile: 'cycling', minutes: [10, 20, 30] });
+  await expect(zoneBands(page, 'En 30 min à vélo')).toHaveText(['≤ 10 min', '≤ 20 min', '≤ 30 min']);
+  expect(isochroneCalls).toEqual([...ign('pedestrian', [5, 10, 15]), { profile: 'bicycle', minutes: [10, 20, 30] }]);
+
+  // Retour à un réglage déjà vu : zone servie par le cache, sans requête
+  await clickSettings(page, ['15 minutes', 'Marche']);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
+  await page.waitForTimeout(600);
+  expect(isochroneCalls).toHaveLength(4);
+});
+
+test('une zone déjà calculée revient sans requête, y compris pour un site au même endroit', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page);
+  await page.goto('./');
+
+  await searchAndPick(page, 'rennes 2', /^UNIVERSITÉ RENNES 2/);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+
+  await searchAndPick(page, 'rennes 2', /^UNIVERSITÉ RENNES 2/);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
+  await page.keyboard.press('Escape');
+
+  // UFR sur le même site que l'université : même zone
+  await searchAndPick(page, 'sciences humaines', /UFR SCIENCES HUMAINES/);
+  await expect(page.getByRole('heading', { level: 2, name: /UFR SCIENCES HUMAINES/ })).toBeVisible();
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
+  expect(isochroneCalls).toHaveLength(3);
 });
 
 test('les filtres géographiques se complètent en cascade, du haut vers le bas', async ({ page }) => {
@@ -129,7 +167,7 @@ test('passe l’interface en anglais', async ({ page }) => {
 
   await page.getByRole('button', { name: 'English' }).click();
   await expect(page.locator('html')).toHaveAttribute('lang', 'en');
-  await expect(page.getByRole('combobox', { name: /Search/ })).toHaveAttribute('placeholder', 'Institution, city or address');
+  await expect(page.getByRole('combobox', { name: /Search/ })).toHaveAttribute('placeholder', 'School, programme, city or address');
   await expect(page).toHaveTitle('Uni-Chrono - University Isochrones');
 });
 
@@ -184,39 +222,53 @@ test('le filtre de statut et les sources des données', async ({ page }) => {
   await expect(page.getByText('Données préparées le 26 octobre 2026')).toBeVisible();
 });
 
-test('transports en commun : zone calculée à la demande, sans calcul en lot', async ({ page }) => {
+test('accueil centré sur la recherche : ni réglages de trajet ni calcul de toutes les zones', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page);
+  await page.goto('./');
+  await expect(legendCount(page, 'Université')).toContainText('4');
+
+  await expect(page.getByRole('radio', { name: 'Marche' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /Calculer/ })).toHaveCount(0);
+  expect(isochroneCalls).toEqual([]);
+});
+
+test('transports en commun : zone Geoapify en « approximated_transit »', async ({ page }) => {
   const { isochroneCalls } = await mockApis(page);
   await page.goto('./');
 
+  await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
   await page.getByRole('radio', { name: 'Transports en commun' }).check({ force: true });
   await expect(page.getByText(/estimation à partir des lignes de bus, tram et métro/)).toBeVisible();
-  // Quota partagé : pas de pastille de calcul de toutes les zones visibles
-  await expect(page.locator('.map-anchor-bottom')).toHaveCount(0);
 
-  await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
-  const zone = page.getByRole('region', { name: 'En 15 min en transports en commun' });
-  await expect(zone.getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem')).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min']);
-  expect(isochroneCalls).toEqual([{ profile: 'transit', minutes: [5, 10, 15] }]);
+  await expect(zoneBands(page, 'En 15 min en transports en commun')).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min']);
+  expect(isochroneCalls.at(-1)).toEqual({ profile: 'approximated_transit', minutes: [5, 10, 15] });
 });
 
-test('clé Mapbox refusée (401 sans CORS) : l’IGN prend le relais à pied, le vélo explique l’échec', async ({ page }) => {
-  // Comme le vrai Mapbox : le refus arrive sans en-tête CORS, le navigateur n'y voit qu'une erreur réseau
-  const { isochroneCalls } = await mockApis(page, { mapboxStatus: 'blocked' });
+test('limite de débit de l’IGN (429) : la zone arrive après l’attente', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page, { ignRateLimited: 1 });
   await page.goto('./');
 
   await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
-  await expect(
-    page.getByRole('region', { name: 'En 15 min à pied' }).getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem')
-  ).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min'], { timeout: 15_000 });
-  // Mapbox essayé puis relancé (erreur réseau), puis une requête IGN par bande
-  expect(isochroneCalls.filter((c) => c.profile === 'walking')).toHaveLength(4);
-  expect(isochroneCalls.filter((c) => c.profile === 'ign-pedestrian').map((c) => c.minutes[0])).toEqual([5, 10, 15]);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min'], { timeout: 15_000 });
+  // Bande de 5 min refusée puis redemandée
+  expect(isochroneCalls).toEqual(ign('pedestrian', [5, 5, 10, 15]));
+});
 
-  // À vélo, l'IGN ne sait pas calculer : échec annoncé, nouvelle tentative proposée
+test('clé Geoapify refusée : le vélo l’annonce sans proposer de réessayer, la marche reste disponible', async ({ page }) => {
+  await mockApis(page, { geoapifyStatus: 401 });
+  await page.goto('./');
+
+  await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
+
   await page.getByRole('radio', { name: 'Vélo' }).check({ force: true });
   const zone = page.getByRole('region', { name: 'En 15 min à vélo' });
-  await expect(zone).toContainText('Zone indisponible pour le moment', { timeout: 15_000 });
-  await expect(zone.getByRole('button', { name: 'Réessayer' })).toBeVisible();
+  await expect(zone).toContainText('La clé Geoapify a été refusée');
+  await expect(zone.getByRole('button', { name: 'Réessayer' })).toHaveCount(0);
+
+  await page.getByRole('radio', { name: 'Marche' }).check({ force: true });
+  await expect(zoneBands(page, 'En 15 min à pied')).toHaveCount(3);
 });
 
 test('calques CROUS et résidences CROUS dans la zone de l’établissement', async ({ page }) => {
@@ -267,7 +319,7 @@ test('un lien partagé rouvre la fiche avec son trajet', async ({ page }) => {
 
   await expect(page.getByRole('heading', { level: 2, name: 'ECOLE NORMALE SUPERIEURE DE LYON' })).toBeVisible();
   await expect(page.getByRole('region', { name: 'En 30 min à vélo' })).toBeVisible();
-  expect(isochroneCalls[0]).toEqual({ profile: 'cycling', minutes: [10, 20, 30] });
+  expect(isochroneCalls[0]).toEqual({ profile: 'bicycle', minutes: [10, 20, 30] });
 
   // L'URL suit la navigation
   await page.getByRole('radio', { name: '45 minutes' }).check({ force: true });
@@ -282,12 +334,14 @@ test('établissements accessibles depuis une adresse', async ({ page }) => {
 
   await searchAndPick(page, 'albert einstein', /20 Avenue Albert Einstein/);
   const origin = page.getByRole('region', { name: /Depuis 20 Avenue Albert Einstein/ });
+  // Réglages de trajet dans le panneau du point de départ
+  await expect(origin.getByRole('radio', { name: 'Marche' })).toBeChecked();
   await origin.getByRole('button', { name: 'Voir les établissements accessibles en 15 min à pied' }).click();
 
   // Zone simulée de ±0,012° autour de l'adresse : l'INSA et l'IUT, pas l'ENS
   await expect(origin).toContainText('2 établissements accessibles en 15 min à pied');
   await expect(origin.getByRole('listitem')).toHaveCount(2);
-  expect(isochroneCalls).toEqual([{ profile: 'walking', minutes: [5, 10, 15] }]);
+  expect(isochroneCalls).toEqual(ign('pedestrian', [5, 10, 15]));
   await expect(legendCount(page, 'Université')).toContainText('1');
   expect(new URL(page.url()).searchParams.get('depuis')).toBe('45.7826,4.8737');
 

@@ -2,14 +2,22 @@ import { useEffect, useState } from 'react';
 import { Etablissement } from '../types/etablissement';
 import { Isochrone, bandMinutes } from '../types/isochrone';
 import { TransportMode } from '../types/transport';
-import { fetchZone } from '../isochroneProvider';
+import { getZone, peekZone } from '../zoneCache';
 import { IsochroneErrorKind, errorKindOf } from '../isochroneError';
 
 export type ZoneResult = { status: 'pending' } | { status: 'ready'; isochrone: Isochrone } | { status: 'error'; error: IsochroneErrorKind };
 
+const toResult = (e: Etablissement, bands: Isochrone['bands']): ZoneResult => {
+  const outer = bands?.[bands.length - 1];
+  return outer
+    ? { status: 'ready', isochrone: { coordinates: outer.coordinates, bands, color: e.color ?? '#000', etablissementId: e.id } }
+    : { status: 'error', error: 'failed' };
+};
+
 /**
- * Zones accessibles de quelques établissements (comparaison), calculées l'une
- * après l'autre pour ménager les quotas, et recalculées au changement de réglage.
+ * Zones accessibles de quelques établissements (comparaison), demandées l'une
+ * après l'autre pour ménager les services, via le cache partagé : les zones
+ * déjà vues dans la fiche ne sont pas recalculées.
  */
 export const useZones = (etablissements: Etablissement[], timeInMinutes: number, transportMode: TransportMode) => {
   const configKey = `${transportMode}:${timeInMinutes}`;
@@ -21,26 +29,21 @@ export const useZones = (etablissements: Etablissement[], timeInMinutes: number,
     const run = async () => {
       for (const e of etablissements) {
         if (controller.signal.aborted) return;
+        let result: ZoneResult;
         try {
-          const bands = await fetchZone(
+          const bands = await getZone(
             e.coordonnees.lat,
             e.coordonnees.lon,
             bandMinutes(timeInMinutes),
             transportMode,
             controller.signal
           );
-          const outer = bands[bands.length - 1];
-          const result: ZoneResult = outer
-            ? { status: 'ready', isochrone: { coordinates: outer.coordinates, bands, color: e.color ?? '#000', etablissementId: e.id } }
-            : { status: 'error', error: 'failed' };
-          setResults((r) => ({ configKey, byId: { ...(r.configKey === configKey ? r.byId : {}), [e.id]: result } }));
+          result = toResult(e, bands);
         } catch (error) {
           if (controller.signal.aborted) return;
-          setResults((r) => ({
-            configKey,
-            byId: { ...(r.configKey === configKey ? r.byId : {}), [e.id]: { status: 'error', error: errorKindOf(error) } },
-          }));
+          result = { status: 'error', error: errorKindOf(error) };
         }
+        setResults((r) => ({ configKey, byId: { ...(r.configKey === configKey ? r.byId : {}), [e.id]: result } }));
       }
     };
     run();
@@ -49,5 +52,11 @@ export const useZones = (etablissements: Etablissement[], timeInMinutes: number,
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ids, configKey]);
 
-  return (id: string): ZoneResult => (results.configKey === configKey ? results.byId[id] : undefined) ?? { status: 'pending' };
+  return (id: string): ZoneResult => {
+    const known = results.configKey === configKey ? results.byId[id] : undefined;
+    if (known) return known;
+    const e = etablissements.find((x) => x.id === id);
+    const bands = e && peekZone(e.coordonnees.lat, e.coordonnees.lon, bandMinutes(timeInMinutes), transportMode);
+    return e && bands ? toResult(e, bands) : { status: 'pending' };
+  };
 };

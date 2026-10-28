@@ -25,7 +25,6 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  VITE_MAPBOX_API_KEY: ${{ secrets.VITE_MAPBOX_API_KEY }}
   VITE_GEOAPIFY_API_KEY: ${{ secrets.VITE_GEOAPIFY_API_KEY }}
 
 jobs:

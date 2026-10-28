@@ -1,16 +1,14 @@
-import { useMemo, useState } from 'react';
-import { MapContainer, ScaleControl, TileLayer, ZoomControl, useMapEvents } from "react-leaflet";
+import { useEffect, useState } from 'react';
+import { MapContainer, ScaleControl, TileLayer, ZoomControl, useMap, useMapEvents } from "react-leaflet";
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import { TransportMode } from '../types/transport';
 import { Place } from '../geocodingFetcher';
-import { Filters, etabId } from '../utils/filters';
 import EtablissementMarkers from './EtablissementMarkers';
 import IsochronePolygons from './IsochronePolygons';
 import MapFocus, { FocusTarget, MapInsets } from './MapFocus';
 import MapResizeHandler from './MapResizeHandler';
 import LocateButton from './LocateButton';
-import IsochroneComputeButton from './IsochroneComputeButton';
 import CommuneHighlight from './CommuneHighlight';
 import PlaceMarker from './PlaceMarker';
 import LayerSwitcher from './LayerSwitcher';
@@ -39,6 +37,21 @@ const TRANSPORT_OVERLAYS: Partial<Record<TransportMode, { url: string; attributi
   },
 };
 
+/** Services des zones accessibles (marche et voiture : IGN ; vélo et transports : Geoapify) */
+const ZONES_ATTRIBUTION =
+  'Zones : <a href="https://geoservices.ign.fr/">IGN</a>, <a href="https://www.geoapify.com/">Geoapify</a>';
+
+const ZonesAttribution: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    map.attributionControl?.addAttribution(ZONES_ATTRIBUTION);
+    return () => {
+      map.attributionControl?.removeAttribution(ZONES_ATTRIBUTION);
+    };
+  }, [map]);
+  return null;
+};
+
 /** Vue initiale : France métropolitaine, cadrée dans la partie non couverte par les panneaux */
 const FRANCE_BOUNDS: [[number, number], [number, number]] = [[41.3, -5.2], [51.1, 9.6]];
 
@@ -60,29 +73,19 @@ const MapClickHandler: React.FC<{ onClick: () => void }> = ({ onClick }) => {
 };
 
 interface MapViewProps {
-  /** Tous les établissements (filtrage de la vue d'ensemble des isochrones) */
-  etablissements: Etablissement[];
   /** Établissements affichés, après filtres */
   filteredEtablissements: Etablissement[];
-  isochrones: Isochrone[];
+  /** Zone de l'établissement sélectionné, une fois calculée */
+  selectedIsochrone: Isochrone | null;
   /** Zone accessible depuis le point de départ (adresse, position), sans sélection */
   originIsochrone?: Isochrone | null;
   /** Zones des favoris comparés */
   compareZones?: Isochrone[];
   /** Position de l'utilisateur trouvée par le bouton « Ma position » */
   onLocated?: (lat: number, lon: number) => void;
-  filters: Filters;
   transportMode: TransportMode;
-  hoveredEtabId: string | null;
   selectedEtab: Etablissement | null;
-  onHoverEtab: (id: string | null) => void;
   onSelectEtab: (id: string | null) => void;
-  /** Calcul à la demande des isochrones ; absent en mode transit */
-  onRequestIsochrones?: (etabs: Etablissement[]) => void;
-  /** Progression du lot d'isochrones en cours */
-  isochronesPending?: number;
-  isochronesBatchTotal?: number;
-  isochronesBatchFailed?: number;
   focusTarget: FocusTarget | null;
   insets: MapInsets;
   place: Place | null;
@@ -92,22 +95,14 @@ interface MapViewProps {
 }
 
 const MapView: React.FC<MapViewProps> = ({
-  etablissements,
   filteredEtablissements,
-  isochrones,
+  selectedIsochrone,
   originIsochrone,
   compareZones,
   onLocated,
-  filters,
   transportMode,
-  hoveredEtabId,
   selectedEtab,
-  onHoverEtab,
   onSelectEtab,
-  onRequestIsochrones,
-  isochronesPending = 0,
-  isochronesBatchTotal = 0,
-  isochronesBatchFailed = 0,
   focusTarget,
   insets,
   place,
@@ -117,14 +112,6 @@ const MapView: React.FC<MapViewProps> = ({
   const overlay = TRANSPORT_OVERLAYS[transportMode];
   const [baseLayer, setBaseLayer] = usePersistentChoice<BaseLayer>('baseLayer', BASE_LAYERS, 'ign');
   const [overlays, setOverlays] = useState<Overlays>({ crousLogements: false, crousRestaurants: false });
-  const selectedEtabId = selectedEtab ? etabId(selectedEtab) : null;
-  const selectedIsochrone = selectedEtabId
-    ? isochrones.find((iso) => iso.etablissementId === selectedEtabId) ?? null
-    : null;
-  const computedIds = useMemo(
-    () => new Set(isochrones.map((iso) => iso.etablissementId).filter((id): id is string => !!id)),
-    [isochrones]
-  );
 
   return (
     <MapContainer
@@ -158,12 +145,10 @@ const MapView: React.FC<MapViewProps> = ({
         />
       )}
 
+      <ZonesAttribution />
       <IsochronePolygons
-        isochrones={isochrones}
-        etablissements={etablissements}
-        filters={filters}
-        hoveredEtabId={hoveredEtabId}
-        selectedEtabId={selectedEtabId}
+        selected={!!selectedEtab}
+        selectedIsochrone={selectedIsochrone}
         originIsochrone={originIsochrone}
         compareZones={compareZones}
       />
@@ -172,7 +157,6 @@ const MapView: React.FC<MapViewProps> = ({
       <EtablissementMarkers
         etablissements={filteredEtablissements}
         selected={selectedEtab}
-        onHover={onHoverEtab}
         onSelect={onSelectEtab}
       />
       {place && place.kind !== 'position' && <PlaceMarker place={place} />}
@@ -193,16 +177,6 @@ const MapView: React.FC<MapViewProps> = ({
       />
       <MapResizeHandler />
       <MapClickHandler onClick={() => onSelectEtab(null)} />
-      {onRequestIsochrones && (
-        <IsochroneComputeButton
-          etablissements={filteredEtablissements}
-          computedIds={computedIds}
-          onRequest={onRequestIsochrones}
-          pending={isochronesPending}
-          total={isochronesBatchTotal}
-          failed={isochronesBatchFailed}
-        />
-      )}
     </MapContainer>
   );
 };

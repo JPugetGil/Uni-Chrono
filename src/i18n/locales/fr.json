@@ -10,16 +10,16 @@
         "help": "Afficher l'aide",
         "sheetExpand": "Agrandir le panneau",
         "sheetCollapse": "Réduire le panneau",
-        "summary": "{{time}} min {{mode}} · {{total}} établissements"
+        "summary_one": "{{total}} établissement",
+        "summary_other": "{{total}} établissements"
     },
     "language": {
         "label": "Langue"
     },
     "onboarding": {
         "title": "Comment ça marche ?",
-        "step1": "Choisissez un mode de transport et une durée.",
-        "step2": "Cherchez une ville ou une adresse, ou zoomez sur la carte.",
-        "step3": "Cliquez sur un établissement pour voir sa zone accessible et les loyers autour, ou calculez les zones de tous les établissements visibles.",
+        "step1": "Cherchez une école ou une formation, ou cliquez sur un établissement de la carte.",
+        "step2": "Voyez la zone accessible à pied, à vélo, en voiture ou en transports, et les loyers autour.",
         "dismiss": "J'ai compris"
     },
     "loading": {
@@ -28,8 +28,8 @@
         "retry": "Réessayer"
     },
     "search": {
-        "label": "Rechercher un établissement, une ville ou une adresse",
-        "placeholder": "Établissement, ville ou adresse",
+        "label": "Rechercher une école, une formation, une ville ou une adresse",
+        "placeholder": "École, formation, ville ou adresse",
         "clear": "Effacer la recherche",
         "filterBy": "Établissements dont le nom contient « {{query}} »",
         "groupEtablissements": "Établissements",
@@ -60,7 +60,7 @@
         "by_walking": "à pied",
         "by_cycling": "à vélo",
         "by_transit": "en transports en commun",
-        "transitHint": "Transports en commun : estimation à partir des lignes de bus, tram et métro (Geoapify, sans horaires). La zone est calculée pour l'établissement que vous ouvrez."
+        "transitHint": "Transports en commun : estimation à partir des lignes de bus, tram et métro (Geoapify, sans horaires)."
     },
     "filters": {
         "title": "Filtres",
@@ -81,22 +81,12 @@
         "lycee": "Lycée ou CFA (BTS, prépa…)",
         "other": "Autre",
         "title": "Légende",
-        "cluster": "Groupe d'établissements : cliquez pour zoomer",
-        "zone": "Zones accessibles calculées"
+        "cluster": "Groupe d'établissements : cliquez pour zoomer"
     },
     "map": {
         "locate": "Ma position",
         "locating": "Localisation…",
         "locateError": "Impossible de récupérer votre position",
-        "compute_one": "Calculer la zone de {{count}} établissement",
-        "compute_other": "Calculer les zones de {{count}} établissements",
-        "computing": "Calcul des zones… {{done}}/{{total}}",
-        "computeDone_one": "{{count}} zone calculée",
-        "computeDone_other": "{{count}} zones calculées",
-        "computeDonePartial": "{{done}}/{{total}} zones calculées : relancez pour les autres",
-        "allComputed": "Zones visibles déjà calculées",
-        "noneVisible": "Aucun établissement visible",
-        "computeTooFar": "Zoomez (vue de moins de 100 km) pour calculer les zones",
         "cluster_one": "{{count}} établissement : zoomer",
         "cluster_other": "Groupe de {{count}} établissements : zoomer",
         "colocated": "{{count}} établissements à cet endroit"
@@ -182,7 +172,7 @@
         "isochrones": "Temps de trajet",
         "geocoding": "Adresses",
         "generatedAt": "Données préparées le {{date}}",
-        "isochronesDetail": "Mapbox ; transports en commun : Geoapify",
+        "isochronesDetail": "IGN Géoplateforme (marche, voiture) ; Geoapify (vélo, transports en commun)",
         "crous": "Résidences et restaurants CROUS",
         "crousDetail": "Cnous, Licence Ouverte, mis à jour le {{date}}"
     },

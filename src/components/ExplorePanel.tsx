@@ -16,8 +16,6 @@ interface ExplorePanelProps {
   onboardingVisible: boolean;
   onDismissOnboarding: () => void;
   onShowHelp: () => void;
-  /** Réglages de trajet (mode, durée) */
-  travelSettings: React.ReactNode;
   /** Point de départ choisi (adresse, position) et établissements accessibles */
   originPanel?: React.ReactNode;
   /** Favoris et accès à la comparaison */
@@ -29,13 +27,12 @@ interface ExplorePanelProps {
   onFiltersReset: () => void;
 }
 
-/** Contenu du panneau sans sélection : aide, trajet, filtres, légende. */
+/** Contenu du panneau sans sélection : aide, point de départ, favoris, filtres, légende. */
 const ExplorePanel: React.FC<ExplorePanelProps> = ({
   showBrand,
   onboardingVisible,
   onDismissOnboarding,
   onShowHelp,
-  travelSettings,
   originPanel,
   favoritesSection,
   etablissements,
@@ -68,8 +65,6 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
       {onboardingVisible && <Onboarding onDismiss={onDismissOnboarding} />}
 
       {favoritesSection}
-
-      {travelSettings}
 
       <section aria-labelledby="filters-title" className="flex flex-col gap-3">
         <h2 id="filters-title" className="flex items-center gap-2 text-sm font-semibold text-slate-900">

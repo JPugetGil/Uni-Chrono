@@ -1,14 +1,14 @@
 ## Uni-Chrono
 
-Uni-Chrono shows where you can study after the baccalauréat in France (every programme listed on Parcoursup) and, for each site, the area you can reach within a given time on foot, by bike or by car (an isochrone), with the rents of the municipalities in that area.
+Uni-Chrono shows where you can study after the baccalauréat in France (every programme listed on Parcoursup) and, for each site, the area you can reach within a given time on foot, by bike, by car or by public transport (an isochrone), with the rents of the municipalities in that area.
 
 **Available in French and English.** Deployed on GitHub Pages: https://jpugetgil.github.io/Uni-Chrono/
 
 ### Features
 
 - Map of the ~8,300 sites offering Parcoursup programmes, grouped into clusters and coloured by category (university or IUT, specialised school, high school or CFA, other).
-- One search box for institutions, cities and addresses; cascading region → department → city filters, programme type and status (public, private under contract, private).
-- Isochrones on demand, for the selected site or for every site in view, with time bands (for example 5, 10 and 15 minutes).
+- One search box for institutions, programmes, cities and addresses; cascading region → department → city filters, programme type and status (public, private under contract, private).
+- The reachable area of the opened site, with time bands (for example 5, 10 and 15 minutes). Areas are cached for the session, per position (about 11 m, so the sites of one campus share theirs), mode and duration, and shared by the site panel, the starting point and the comparison.
 - For each reachable area: surface, municipalities (Paris, Lyon and Marseille by arrondissement), median rent, and a list of municipalities with their advertised rent per m² and an estimated monthly rent.
 - For each site: its Parcoursup programmes with links to their Parcoursup pages, status, website, and the CROUS residences in its reachable area.
 - From an address or your location: the sites reachable within the chosen time, by time band.
@@ -37,20 +37,19 @@ The script fails if a source returns too few rows, so a broken source never repl
 
 | What | Service | Key |
 |------|---------|-----|
-| Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` (public `pk.` token) |
-| Isochrones (walking, driving) without Mapbox, or when Mapbox fails | Géoplateforme isochrone service (IGN) | none |
-| Isochrones (public transport, optional) | Geoapify Isoline API, `approximated_transit` mode: an estimate from OpenStreetMap transit lines, without timetables (the `transit` mode gave areas smaller than walking in French cities). Free plan: 3,000 credits a day, shared by all visitors | `VITE_GEOAPIFY_API_KEY` |
+| Isochrones (walking, driving) | Géoplateforme isochrone service (IGN), BD TOPO road network, one request per time band. About 5 requests per second per visitor's IP, then a short block: the app sends at most 4 per second and waits out a 429 | none |
+| Isochrones (cycling, public transport; optional) | Geoapify Isoline API: `bicycle` mode, and `approximated_transit` mode, an estimate from OpenStreetMap transit lines without timetables (the `transit` mode gave areas smaller than walking in French cities). Free plan: 3,000 credits a day, shared by all visitors | `VITE_GEOAPIFY_API_KEY` |
 | Address search | Géoplateforme geocoding (IGN) | none |
 | Municipality contours | geo.api.gouv.fr | none |
 | Basemaps | Plan IGN (Géoplateforme WMTS), OpenStreetMap tiles | none |
 
-API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions). Without a Mapbox key, walking and driving areas come from the IGN service and cycling explains that it is unavailable; without a Geoapify key the public transport mode is hidden. Computing every site in view at once is reserved for Mapbox; with IGN and Geoapify, areas are computed for the opened site only, to spare these shared services. Mapbox answers a refused key with a 401 without CORS headers, which a browser cannot tell from a network error: the app therefore falls back to IGN on any Mapbox failure.
+The Geoapify key is embedded in the built JavaScript and is therefore public. Without it, the cycling and public transport modes are hidden; walking and driving need no key. To spare the shared quota, an area is only computed for the site the user opens (or a starting point they ask for), once the mode and duration have settled (0.4 s), and kept in the session cache and, through the service worker, in the browser cache (Geoapify 7 days, IGN 30 days).
 
 ### Run locally
 
-Prerequisites: Node.js 22.18 or later (the data script is TypeScript run directly by Node) and a Mapbox token.
+Prerequisites: Node.js 22.18 or later (the data script is TypeScript run directly by Node). A Geoapify key is optional (cycling and public transport).
 
-1. `cp .env.example .env` and fill in `VITE_MAPBOX_API_KEY`.
+1. `cp .env.example .env` and, optionally, fill in `VITE_GEOAPIFY_API_KEY`.
 2. `npm install`
 3. `npm run dev`, then open the URL printed by Vite (the app is served under `/Uni-Chrono/`). The first run prepares the data (`npm run data`, about 10 seconds); run `npm run data` again to refresh it.
 
@@ -65,4 +64,4 @@ Prerequisites: Node.js 22.18 or later (the data script is TypeScript run directl
 ### Continuous integration and deployment
 
 - `.github/workflows/ci.yml` runs lint, unit tests, build and browser tests on every pull request.
-- `.github/workflows/deploy-pages.yml` runs lint and unit tests, prepares the data, then builds and deploys `main` to GitHub Pages, on every push and every Monday. Set the `VITE_MAPBOX_API_KEY` and, optionally, `VITE_GEOAPIFY_API_KEY` repository secrets.
+- `.github/workflows/deploy-pages.yml` runs lint and unit tests, prepares the data, then builds and deploys `main` to GitHub Pages, on every push and every Monday. Set the optional `VITE_GEOAPIFY_API_KEY` repository secret.
