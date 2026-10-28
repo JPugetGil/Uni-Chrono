@@ -5,7 +5,8 @@
 
 const GEOCODING_URL = 'https://data.geopf.fr/geocodage/search';
 
-export type PlaceKind = 'housenumber' | 'street' | 'locality' | 'municipality';
+/** « position » : localisation de l'appareil (pas de repère, le point bleu suffit) */
+export type PlaceKind = 'housenumber' | 'street' | 'locality' | 'municipality' | 'position';
 
 export interface Place {
   id: string;

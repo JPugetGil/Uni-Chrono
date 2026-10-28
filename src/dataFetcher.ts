@@ -1,4 +1,5 @@
 import { DataMeta, Etablissement, Formation } from './types/etablissement';
+import { CrousData } from './types/crous';
 import { categoryColors } from './design-system/tokens';
 
 /**
@@ -15,8 +16,11 @@ const fetchJson = async <T>(path: string, signal?: AbortSignal): Promise<T> => {
   return (await response.json()) as T;
 };
 
-const isEtablissement = (e: unknown): e is Etablissement => {
-  const x = e as Etablissement;
+/** Site tel qu'écrit dans etablissements.json : filières données par leur rang dans filieres.json */
+type StoredEtablissement = Omit<Etablissement, 'filieres'> & { filieres?: number[] };
+
+const isEtablissement = (e: unknown): e is StoredEtablissement => {
+  const x = e as StoredEtablissement;
   return (
     typeof x?.id === 'string' &&
     typeof x.nom === 'string' &&
@@ -26,11 +30,21 @@ const isEtablissement = (e: unknown): e is Etablissement => {
   );
 };
 
-/** Sites d'enseignement, colorés par catégorie ; les entrées mal formées sont écartées */
+/**
+ * Sites d'enseignement, colorés par catégorie, avec le libellé de leurs
+ * filières ; les entrées mal formées sont écartées.
+ */
 export const fetchEtablissements = async (signal?: AbortSignal): Promise<Etablissement[]> => {
-  const data = await fetchJson<unknown>('etablissements.json', signal);
-  if (!Array.isArray(data)) throw new Error('Format de etablissements.json inattendu');
-  return data.filter(isEtablissement).map((e) => ({ ...e, color: categoryColors[e.category] ?? categoryColors.other }));
+  const [data, filieres] = await Promise.all([
+    fetchJson<unknown>('etablissements.json', signal),
+    fetchJson<unknown>('filieres.json', signal),
+  ]);
+  if (!Array.isArray(data) || !Array.isArray(filieres)) throw new Error('Format de etablissements.json inattendu');
+  return data.filter(isEtablissement).map((e) => ({
+    ...e,
+    filieres: (e.filieres ?? []).map((i) => filieres[i]).filter((f): f is string => typeof f === 'string'),
+    color: categoryColors[e.category] ?? categoryColors.other,
+  }));
 };
 
 // Un fichier de formations par préfixe d'UAI (3 premiers caractères), mis en cache
@@ -46,6 +60,17 @@ export const fetchFormations = async (etablissement: Etablissement): Promise<For
     formationFiles.set(prefix, file);
   }
   return (await file)[etablissement.id] ?? [];
+};
+
+let crousPromise: Promise<CrousData> | null = null;
+
+/** Résidences et restaurants CROUS (chargés à la première utilisation) */
+export const fetchCrous = (): Promise<CrousData> => {
+  crousPromise ??= fetchJson<CrousData>('crous.json').catch((error) => {
+    crousPromise = null;
+    throw error;
+  });
+  return crousPromise;
 };
 
 let metaPromise: Promise<DataMeta> | null = null;

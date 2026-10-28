@@ -4,6 +4,8 @@ import { matchesAllWords, normalizeText } from './text';
 export type Filters = {
   /** Type de formation proposé (BTS, Licence…) */
   type?: string;
+  /** Filière précise proposée (« BTS - Services informatiques aux organisations ») */
+  filiere?: string;
   statut?: Statut;
   region?: string;
   departement?: string;
@@ -18,6 +20,7 @@ export const etabId = (e: Etablissement): string => e.id;
 /** Test d'un établissement contre les filtres */
 export const matchesFilters = (e: Etablissement, filters: Filters): boolean => {
   if (filters.type && !e.types.includes(filters.type)) return false;
+  if (filters.filiere && !e.filieres.includes(filters.filiere)) return false;
   if (filters.statut && e.statut !== filters.statut) return false;
   if (filters.region && e.region !== filters.region) return false;
   if (filters.departement && e.departement !== filters.departement) return false;

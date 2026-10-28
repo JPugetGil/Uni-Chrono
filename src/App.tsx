@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { CircleHelp, MapPin, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { CircleHelp, GraduationCap, MapPin, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import MapView from './components/MapView';
 import MapStatus from './components/MapStatus';
 import SearchBox from './components/SearchBox';
@@ -27,9 +27,19 @@ import { Place } from './geocodingFetcher';
 import { Etablissement } from './types/etablissement';
 import { Filters, etabId, matchesFilters } from './utils/filters';
 import { boundsOf } from './utils/geo';
-import { hasMapboxKey } from './mapboxFetcher';
 import { hasTransitKey } from './geoapifyFetcher';
 import { IsochroneErrorKind } from './isochroneError';
+import { PROVIDER_NAMES, batchAllowed, zoneProviderFor } from './isochroneProvider';
+import { parseUrlState, serializeUrlState } from './utils/urlState';
+import { reachableEtablissements } from './utils/reachable';
+import { useOriginIsochrone } from './hooks/useOriginIsochrone';
+import OriginPanel from './components/OriginPanel';
+import FavoritesSection from './components/FavoritesSection';
+import FavoriteButton from './components/FavoriteButton';
+import CompareView from './components/CompareView';
+import { MAX_FAVORITES, useFavorites } from './hooks/useFavorites';
+import { useZones } from './hooks/useZones';
+import { TRANSPORT_MODES } from './types/transport';
 
 /** Largeur du panneau latéral (bureau) et marge autour */
 const PANEL_WIDTH = 380;
@@ -37,6 +47,9 @@ const PANEL_GAP = 12;
 /** Mobile : hauteur occupée par la barre de recherche, avec et sans puces dessous */
 const SEARCH_BAR_INSET = 64;
 const SEARCH_BAR_WITH_CHIPS_INSET = 100;
+
+/** Couleurs des favoris comparés : les quatre premières teintes de la palette catégorielle */
+const COMPARE_COLORS = ['#2a78d6', '#eb6834', '#1baf7a', '#eda100'];
 
 const etabsBounds = (etabs: Etablissement[]) =>
   boundsOf(etabs.map((e) => [e.coordonnees.lat, e.coordonnees.lon] as [number, number]));
@@ -48,24 +61,50 @@ function App() {
   const isMobile = useMediaQuery('(max-width: 767px)');
   const viewportHeight = useViewportHeight();
 
-  const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences();
+  // Lien partagé : établissement, trajet et filtres lus une fois dans l'URL
+  const [initialUrl] = useState(() =>
+    parseUrlState(window.location.search, TRANSPORT_MODES.filter((m) => m !== 'transit' || hasTransitKey))
+  );
+  const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences(initialUrl);
   const { etablissementsGeoJSON: etablissements, status: etabStatus, retry } = useEtablissements();
   const { isochrones, requestIsochrones, statusById, pendingCount, batchTotal, batchFailed } = useIsochrones(timeInMinutes, transportMode);
 
   // Établissement survolé (marqueur) et sélectionné (clic, recherche)
   const [hoveredEtabId, setHoveredEtabId] = useState<string | null>(null);
-  const [selectedEtabId, setSelectedEtabId] = useState<string | null>(null);
-  const [filters, setFilters] = useState<Filters>({});
+  const [selectedEtabId, setSelectedEtabId] = useState<string | null>(initialUrl.etab ?? null);
+  const [filters, setFilters] = useState<Filters>(initialUrl.filters);
   // Cadrage demandé par la recherche ou un filtre géographique
   const [focusTarget, setFocusTarget] = useState<FocusTarget | null>(null);
   // Adresse choisie dans la recherche
-  const [place, setPlace] = useState<Place | null>(null);
+  const [place, setPlace] = useState<Place | null>(() =>
+    initialUrl.origin ? { id: 'url', context: '', kind: 'housenumber', ...initialUrl.origin } : null
+  );
+  // Calcul des établissements accessibles depuis ce point, demandé explicitement
+  const [originActive, setOriginActive] = useState(!!initialUrl.origin);
+  const [reachableOnly, setReachableOnly] = useState(true);
   // Commune mise en évidence depuis la liste des loyers
   const [hoveredCommune, setHoveredCommune] = useState<string | null>(null);
   const [pinnedCommune, setPinnedCommune] = useState<string | null>(null);
   const [panelCollapsed, setPanelCollapsed] = usePersistentFlag('panelCollapsed', false);
   const [onboardingDone, setOnboardingDone] = usePersistentFlag('onboardingDone', false);
-  const [sheetSnap, setSheetSnap] = useState<SheetSnap>('collapsed');
+  // Favoris et leur comparaison
+  const favorites = useFavorites();
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [sheetSnap, setSheetSnap] = useState<SheetSnap>(initialUrl.etab ? 'half' : 'collapsed');
+
+  // L'URL suit l'état : copier l'adresse suffit à partager une fiche et ses réglages
+  useEffect(() => {
+    const query = serializeUrlState({
+      etab: selectedEtabId ?? undefined,
+      origin: place && originActive ? { lat: place.lat, lon: place.lon, label: place.label } : undefined,
+      mode: transportMode,
+      duree: timeInMinutes,
+      filters,
+    });
+    if (query !== window.location.search) {
+      window.history.replaceState(null, '', `${window.location.pathname}${query}${window.location.hash}`);
+    }
+  }, [selectedEtabId, place, originActive, transportMode, timeInMinutes, filters]);
 
   const filteredEtablissements = useMemo(
     () => (etablissements ?? []).filter((e) => matchesFilters(e, filters)),
@@ -84,13 +123,27 @@ function App() {
     [isTransit, transit.isochrone, isochrones]
   );
 
-  // Clé du service d'isochrones du mode choisi présente au build
-  const zonesConfigured = isTransit ? hasTransitKey : hasMapboxKey;
+  // Service d'isochrones du mode choisi (Mapbox, IGN sans clé, Geoapify), s'il y en a un
+  const zoneProvider = zoneProviderFor(transportMode);
+  const zonesConfigured = zoneProvider !== null;
+  const providerName = PROVIDER_NAMES[zoneProvider ?? (transportMode === 'transit' ? 'geoapify' : 'mapbox')];
+
+  // Établissements accessibles depuis le point de départ (adresse, position)
+  const origin = useMemo(() => (place ? { lat: place.lat, lon: place.lon } : null), [place]);
+  const originZone = useOriginIsochrone(origin, timeInMinutes, transportMode, originActive && zonesConfigured);
+  const reachable = useMemo(
+    () => (originZone.isochrone && origin ? reachableEtablissements(filteredEtablissements, originZone.isochrone, origin) : null),
+    [originZone.isochrone, origin, filteredEtablissements]
+  );
+  const mapEtablissements = useMemo(
+    () => (reachable && reachableOnly ? reachable.map((r) => r.etablissement) : filteredEtablissements),
+    [reachable, reachableOnly, filteredEtablissements]
+  );
 
   // La sélection d'un établissement déclenche le calcul de son isochrone si absente
   useEffect(() => {
-    if (selectedEtab && !isTransit && hasMapboxKey) requestIsochrones([selectedEtab]);
-  }, [selectedEtab, isTransit, requestIsochrones]);
+    if (selectedEtab && !isTransit && zonesConfigured) requestIsochrones([selectedEtab]);
+  }, [selectedEtab, isTransit, zonesConfigured, requestIsochrones]);
 
   const selectedIsochrone = selectedEtabId
     ? displayedIsochrones.find((iso) => iso.etablissementId === selectedEtabId) ?? null
@@ -146,12 +199,15 @@ function App() {
   const selectPlace = (p: Place) => {
     selectEtab(null);
     setPlace(p);
+    setOriginActive(false);
     const maxZoom = p.kind === 'municipality' ? 13 : p.kind === 'housenumber' ? 16 : 15;
+    // Point de départ : le volet s'ouvre sur le panneau « depuis ce point »
+    if (isMobile) setSheetSnap('half');
     setFocusTarget({ bounds: [[p.lat, p.lon], [p.lat, p.lon]], maxZoom });
   };
 
   // Marges des panneaux posés sur la carte : cadrages, contrôles, pastilles
-  const hasChips = !!filters.name || !!place;
+  const hasChips = !!filters.name || !!filters.filiere || !!place;
   const sheetHeights = useMemo(
     () => ({
       collapsed: 68,
@@ -181,6 +237,7 @@ function App() {
         onSelectCity={selectCity}
         onSelectPlace={selectPlace}
         onApplyNameFilter={(name) => setFilters((f) => ({ ...f, name }))}
+        onApplyFiliere={(filiere) => setFilters((f) => ({ ...f, filiere }))}
       />
       {hasChips && (
         <div className="flex flex-wrap gap-1.5">
@@ -191,12 +248,23 @@ function App() {
               onRemove={() => setFilters((f) => ({ ...f, name: undefined }))}
             />
           )}
+          {filters.filiere && (
+            <Chip
+              icon={<GraduationCap aria-hidden className="size-3.5 shrink-0" />}
+              label={filters.filiere}
+              removeLabel={t('search.removeFiliere')}
+              onRemove={() => setFilters((f) => ({ ...f, filiere: undefined }))}
+            />
+          )}
           {place && (
             <Chip
               icon={<MapPin aria-hidden className="size-3.5 shrink-0" />}
               label={place.label}
               removeLabel={t('search.removePlace')}
-              onRemove={() => setPlace(null)}
+              onRemove={() => {
+                setPlace(null);
+                setOriginActive(false);
+              }}
             />
           )}
         </div>
@@ -213,6 +281,20 @@ function App() {
     />
   );
 
+  // Comparaison : favoris (dans l'ordre d'ajout), une couleur par favori, zones calculées à l'ouverture
+  const favoriteEtabs = useMemo(
+    () => favorites.ids.map((id) => etablissements?.find((e) => e.id === id)).filter((e): e is Etablissement => !!e),
+    [favorites.ids, etablissements]
+  );
+  const zoneOf = useZones(compareOpen ? favoriteEtabs : [], timeInMinutes, transportMode);
+  const compareColor = (id: string) => COMPARE_COLORS[Math.max(0, favorites.ids.indexOf(id)) % COMPARE_COLORS.length];
+  const compareZones = compareOpen
+    ? favoriteEtabs.flatMap((e) => {
+        const zone = zoneOf(e.id);
+        return zone.status === 'ready' ? [{ ...zone.isochrone, color: compareColor(e.id) }] : [];
+      })
+    : undefined;
+
   const panelContent = selectedEtab ? (
     <EtablissementDetails
       key={selectedEtabId}
@@ -220,7 +302,7 @@ function App() {
       isochrone={selectedIsochrone}
       zoneStatus={zoneStatus}
       zoneError={zoneError}
-      zoneProvider={isTransit ? 'Geoapify' : 'Mapbox'}
+      zoneProvider={providerName}
       onRetryZone={isTransit || !zonesConfigured ? undefined : () => requestIsochrones([selectedEtab])}
       transportMode={transportMode}
       timeInMinutes={timeInMinutes}
@@ -229,6 +311,25 @@ function App() {
       onPinCommune={setPinnedCommune}
       onHoverCommune={setHoveredCommune}
       travelSettings={travelSettings}
+      favoriteButton={
+        <FavoriteButton
+          active={favorites.ids.includes(selectedEtab.id)}
+          full={favorites.ids.length >= MAX_FAVORITES}
+          onToggle={() => favorites.toggle(selectedEtab.id)}
+        />
+      }
+    />
+  ) : compareOpen && favoriteEtabs.length >= 2 ? (
+    <CompareView
+      etablissements={favoriteEtabs}
+      colorOf={compareColor}
+      zoneOf={zoneOf}
+      provider={providerName}
+      timeInMinutes={timeInMinutes}
+      transportMode={transportMode}
+      travelSettings={travelSettings}
+      onSelectEtab={selectEtab}
+      onClose={() => setCompareOpen(false)}
     />
   ) : (
     <ExplorePanel
@@ -237,11 +338,38 @@ function App() {
       onDismissOnboarding={() => setOnboardingDone(true)}
       onShowHelp={() => setOnboardingDone(false)}
       travelSettings={travelSettings}
+      favoritesSection={
+        <FavoritesSection
+          favorites={favoriteEtabs}
+          onSelect={selectEtab}
+          onRemove={favorites.remove}
+          onCompare={() => setCompareOpen(true)}
+        />
+      }
+      originPanel={
+        place && (
+          <OriginPanel
+            label={place.label}
+            active={originActive}
+            onActivate={() => setOriginActive(true)}
+            loading={originZone.loading}
+            error={zonesConfigured ? originZone.error : 'unconfigured'}
+            provider={providerName}
+            reachable={reachable}
+            reachableOnly={reachableOnly}
+            onReachableOnlyChange={setReachableOnly}
+            timeInMinutes={timeInMinutes}
+            transportMode={transportMode}
+            onSelectEtab={selectEtab}
+          />
+        )
+      }
       etablissements={etablissements}
-      filteredEtablissements={filteredEtablissements}
+      // Légende : établissements affichés (seulement les accessibles si demandé)
+      filteredEtablissements={mapEtablissements}
       filters={filters}
       onFiltersChange={changeFilters}
-      onFiltersReset={() => changeFilters({ name: filters.name })}
+      onFiltersReset={() => changeFilters({ name: filters.name, filiere: filters.filiere })}
     />
   );
 
@@ -249,18 +377,22 @@ function App() {
     <div className="relative h-dvh w-full overflow-hidden" style={cssVars}>
       <MapView
         etablissements={etablissements ?? []}
-        filteredEtablissements={filteredEtablissements}
+        filteredEtablissements={mapEtablissements}
         isochrones={displayedIsochrones}
+        originIsochrone={selectedEtab ? null : originZone.isochrone}
+        compareZones={selectedEtab ? undefined : compareZones}
+        onLocated={(lat, lon) =>
+          selectPlace({ id: 'position', label: t('origin.myPosition'), context: '', kind: 'position', lat, lon })
+        }
         filters={filters}
         transportMode={transportMode}
         hoveredEtabId={hoveredEtabId}
         selectedEtab={selectedEtab}
         onHoverEtab={setHoveredEtabId}
         onSelectEtab={selectEtab}
-        // Volet plein écran (mobile) : la pastille de calcul n'aurait plus de place
-        // Pas de calcul en lot en transports (quota partagé), ni sans clé, ni volet plein écran (mobile)
+        // Calcul en lot avec Mapbox seulement (quotas partagés ailleurs), pas avec le volet plein écran (mobile)
         onRequestIsochrones={
-          isTransit || !hasMapboxKey || (isMobile && sheetSnap === 'full') ? undefined : requestIsochrones
+          batchAllowed(transportMode) && !(isMobile && sheetSnap === 'full') ? requestIsochrones : undefined
         }
         isochronesPending={pendingCount}
         isochronesBatchTotal={batchTotal}
@@ -293,7 +425,7 @@ function App() {
                   {t('panel.summary', {
                     time: timeInMinutes,
                     mode: t(`transport.by_${transportMode}`),
-                    total: fmt.integer(filteredEtablissements.length),
+                    total: fmt.integer(mapEtablissements.length),
                   })}
                 </p>
               )

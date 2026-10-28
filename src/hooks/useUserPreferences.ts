@@ -2,8 +2,10 @@ import { useState, useEffect } from 'react';
 import { TransportMode, TRANSPORT_MODES } from '../types/transport';
 import { hasTransitKey } from '../geoapifyFetcher';
 
-export const useUserPreferences = () => {
+/** Mode et durée mémorisés ; `initial` (lien partagé) a priorité sur la mémoire */
+export const useUserPreferences = (initial: { mode?: TransportMode; duree?: number } = {}) => {
   const [timeInMinutes, setTimeInMinutes] = useState<number>(() => {
+    if (initial.duree) return initial.duree;
     try {
       const saved = localStorage.getItem('timeInMinutes');
       const n = saved ? Number(saved) : NaN;
@@ -15,6 +17,7 @@ export const useUserPreferences = () => {
   });
 
   const [transportMode, setTransportMode] = useState<TransportMode>(() => {
+    if (initial.mode) return initial.mode;
     try {
       const saved = localStorage.getItem('transportMode');
       // « transit » mémorisé alors que la clé Geoapify n'est plus fournie : retour à la marche

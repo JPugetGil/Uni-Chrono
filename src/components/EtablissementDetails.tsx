@@ -12,6 +12,8 @@ import ZoneSummary, { ZoneStatus } from './ZoneSummary';
 import { IsochroneErrorKind } from '../isochroneError';
 import HousingList from './HousingList';
 import FormationsList from './FormationsList';
+import CrousInZone from './CrousInZone';
+import ShareButton from './ShareButton';
 
 interface EtablissementDetailsProps {
   etablissement: Etablissement;
@@ -30,6 +32,8 @@ interface EtablissementDetailsProps {
   onHoverCommune: (code: string | null) => void;
   /** Réglages de trajet (mode, durée), modifiables sans quitter la fiche */
   travelSettings: React.ReactNode;
+  /** Bouton d'ajout aux favoris */
+  favoriteButton?: React.ReactNode;
 }
 
 const Row: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => (
@@ -57,6 +61,7 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   onPinCommune,
   onHoverCommune,
   travelSettings,
+  favoriteButton,
 }) => {
   const { t } = useTranslation();
   const { id, uai, nom, region, departement, commune, coordonnees, color, category, statut, types, url } = etablissement;
@@ -91,6 +96,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
           </h2>
           <p className="mt-0.5 text-sm text-slate-600">{[commune, departement].filter(Boolean).join(' · ')}</p>
         </div>
+        {favoriteButton}
+        <ShareButton title={nom} />
       </header>
 
       {travelSettings}
@@ -118,6 +125,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
         onPinCommune={onPinCommune}
         onHoverCommune={onHoverCommune}
       />
+
+      {zoneStatus === 'ready' && isochrone && <CrousInZone isochrone={isochrone} origin={coordonnees} />}
 
       <FormationsList etablissement={etablissement} />
 

@@ -112,7 +112,8 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ etablissements, values, onCha
       </option>
     ));
 
-  const active = countActiveFilters({ ...values, name: undefined });
+  // Nom et filière se règlent depuis la recherche (puces) : hors du compte et de la réinitialisation
+  const active = countActiveFilters({ ...values, name: undefined, filiere: undefined });
 
   return (
     <div className="grid grid-cols-2 gap-x-2 gap-y-3">

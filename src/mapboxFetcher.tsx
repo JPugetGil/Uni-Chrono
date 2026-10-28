@@ -118,7 +118,9 @@ const fetchWithRetries = (url: string, signal?: AbortSignal, maxRetries = 3): Pr
 // You must provide your Mapbox access token here
 const MAPBOX_ACCESS_TOKEN = import.meta.env.VITE_MAPBOX_API_KEY || '';
 
-export const hasMapboxKey = MAPBOX_ACCESS_TOKEN.length > 0;
+// Seul un jeton public (« pk. ») peut être publié dans le JavaScript ; toute autre
+// valeur (vide, secret « sk. », faute de frappe) est traitée comme une clé absente
+export const hasMapboxKey = MAPBOX_ACCESS_TOKEN.startsWith('pk.');
 
 /**
  * Isochrones d'un point pour plusieurs durées en une seule requête

@@ -24,6 +24,10 @@ interface MapFocusProps {
   selected: Etablissement | null;
   /** Isochrone de l'établissement sélectionné, quand elle est disponible */
   selectedIsochrone?: Isochrone | null;
+  /** Zone depuis le point de départ : cadrée dès qu'elle arrive */
+  originIsochrone?: Isochrone | null;
+  /** Zones des favoris comparés : cadrées ensemble */
+  compareZones?: Isochrone[];
   target: FocusTarget | null;
   insets: MapInsets;
 }
@@ -45,7 +49,7 @@ const fitOptions = (insets: MapInsets, maxZoom: number): L.FitBoundsOptions & L.
  *   (une seule fois : les autres isochrones reçues ne recentrent pas la carte) ;
  * - cible de recherche ou de filtre.
  */
-const MapFocus: React.FC<MapFocusProps> = ({ selected, selectedIsochrone, target, insets }) => {
+const MapFocus: React.FC<MapFocusProps> = ({ selected, selectedIsochrone, originIsochrone, compareZones, target, insets }) => {
   const map = useMap();
   // Lu au moment du déplacement : un changement de marges seul ne recadre pas
   const insetsRef = useRef(insets);
@@ -79,6 +83,23 @@ const MapFocus: React.FC<MapFocusProps> = ({ selected, selectedIsochrone, target
   useEffect(() => {
     if (target) map.flyToBounds(target.bounds, fitOptions(insetsRef.current, target.maxZoom));
   }, [map, target]);
+
+  useEffect(() => {
+    const zone = originIsochrone ? boundsOf(flattenCoordinates(originIsochrone.coordinates)) : null;
+    if (zone) map.flyToBounds(zone, fitOptions(insetsRef.current, 16));
+  }, [map, originIsochrone]);
+
+  // Comparaison : recadrage quand une zone de plus est calculée
+  const compareCount = compareZones?.length ?? 0;
+  const compareZonesRef = useRef(compareZones);
+  useEffect(() => {
+    compareZonesRef.current = compareZones;
+  }, [compareZones]);
+  useEffect(() => {
+    const zones = compareZonesRef.current ?? [];
+    const all = boundsOf(zones.flatMap((z) => flattenCoordinates(z.coordinates)));
+    if (all) map.flyToBounds(all, fitOptions(insetsRef.current, 15));
+  }, [map, compareCount]);
 
   return null;
 };

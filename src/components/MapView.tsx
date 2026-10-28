@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { MapContainer, ScaleControl, TileLayer, ZoomControl, useMapEvents } from "react-leaflet";
 import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
@@ -13,6 +13,18 @@ import LocateButton from './LocateButton';
 import IsochroneComputeButton from './IsochroneComputeButton';
 import CommuneHighlight from './CommuneHighlight';
 import PlaceMarker from './PlaceMarker';
+import LayerSwitcher from './LayerSwitcher';
+import CrousMarkers from './CrousMarkers';
+import { usePersistentChoice } from '../hooks/usePersistentFlag';
+import { BASE_LAYERS, BaseLayer, Overlays } from '../types/layers';
+
+// Fonds de carte : Plan IGN (Géoplateforme, lisible pour la France), ou OpenStreetMap
+// (sans sous-domaines a/b/c, déconseillés par la politique d'usage des tuiles OSM)
+const PLAN_IGN_URL =
+  'https://data.geopf.fr/wmts?SERVICE=WMTS&REQUEST=GetTile&VERSION=1.0.0&LAYER=GEOGRAPHICALGRIDSYSTEMS.PLANIGNV2&STYLE=normal&TILEMATRIXSET=PM&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}&FORMAT=image/png';
+const PLAN_IGN_ATTRIBUTION = '&copy; <a href="https://www.ign.fr/">IGN</a> – Géoplateforme';
+const OSM_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const OSM_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
 // Surcouches de tuiles adaptées au mode de transport (leaflet-providers).
 // 'driving' : pas de surcouche, le fond OSM est déjà centré sur le réseau routier.
@@ -53,6 +65,12 @@ interface MapViewProps {
   /** Établissements affichés, après filtres */
   filteredEtablissements: Etablissement[];
   isochrones: Isochrone[];
+  /** Zone accessible depuis le point de départ (adresse, position), sans sélection */
+  originIsochrone?: Isochrone | null;
+  /** Zones des favoris comparés */
+  compareZones?: Isochrone[];
+  /** Position de l'utilisateur trouvée par le bouton « Ma position » */
+  onLocated?: (lat: number, lon: number) => void;
   filters: Filters;
   transportMode: TransportMode;
   hoveredEtabId: string | null;
@@ -77,6 +95,9 @@ const MapView: React.FC<MapViewProps> = ({
   etablissements,
   filteredEtablissements,
   isochrones,
+  originIsochrone,
+  compareZones,
+  onLocated,
   filters,
   transportMode,
   hoveredEtabId,
@@ -94,6 +115,8 @@ const MapView: React.FC<MapViewProps> = ({
   showZoomControl = true,
 }) => {
   const overlay = TRANSPORT_OVERLAYS[transportMode];
+  const [baseLayer, setBaseLayer] = usePersistentChoice<BaseLayer>('baseLayer', BASE_LAYERS, 'ign');
+  const [overlays, setOverlays] = useState<Overlays>({ crousLogements: false, crousRestaurants: false });
   const selectedEtabId = selectedEtab ? etabId(selectedEtab) : null;
   const selectedIsochrone = selectedEtabId
     ? isochrones.find((iso) => iso.etablissementId === selectedEtabId) ?? null
@@ -118,12 +141,11 @@ const MapView: React.FC<MapViewProps> = ({
       preferCanvas
       className="absolute inset-0 z-0"
     >
-      <TileLayer
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        maxZoom={19}
-        noWrap
-      />
+      {baseLayer === 'ign' ? (
+        <TileLayer key="ign" url={PLAN_IGN_URL} attribution={PLAN_IGN_ATTRIBUTION} maxZoom={19} noWrap />
+      ) : (
+        <TileLayer key="osm" url={OSM_URL} attribution={OSM_ATTRIBUTION} maxZoom={19} noWrap />
+      )}
       {overlay && (
         <TileLayer
           key={transportMode}
@@ -142,6 +164,8 @@ const MapView: React.FC<MapViewProps> = ({
         filters={filters}
         hoveredEtabId={hoveredEtabId}
         selectedEtabId={selectedEtabId}
+        originIsochrone={originIsochrone}
+        compareZones={compareZones}
       />
       <CommuneHighlight code={highlightedCommune} />
 
@@ -151,13 +175,22 @@ const MapView: React.FC<MapViewProps> = ({
         onHover={onHoverEtab}
         onSelect={onSelectEtab}
       />
-      {place && <PlaceMarker place={place} />}
+      {place && place.kind !== 'position' && <PlaceMarker place={place} />}
 
       {showZoomControl && <ZoomControl position="topright" />}
-      <LocateButton />
+      <LocateButton onLocated={onLocated} />
+      <LayerSwitcher base={baseLayer} onBaseChange={setBaseLayer} overlays={overlays} onOverlaysChange={setOverlays} />
+      <CrousMarkers logements={overlays.crousLogements} restaurants={overlays.crousRestaurants} />
       <ScaleControl position="bottomright" imperial={false} />
 
-      <MapFocus selected={selectedEtab} selectedIsochrone={selectedIsochrone} target={focusTarget} insets={insets} />
+      <MapFocus
+        selected={selectedEtab}
+        selectedIsochrone={selectedIsochrone}
+        originIsochrone={originIsochrone}
+        compareZones={compareZones}
+        target={focusTarget}
+        insets={insets}
+      />
       <MapResizeHandler />
       <MapClickHandler onClick={() => onSelectEtab(null)} />
       {onRequestIsochrones && (

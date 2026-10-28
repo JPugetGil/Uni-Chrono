@@ -40,7 +40,9 @@
         "searchingPlaces": "Searching addresses…",
         "nameFilter": "Name: “{{name}}”",
         "removeNameFilter": "Remove name filter",
-        "removePlace": "Remove marker"
+        "removePlace": "Remove marker",
+        "groupFilieres": "Programmes",
+        "removeFiliere": "Remove programme filter"
     },
     "travel": {
         "mode": "Mode of transport",
@@ -180,6 +182,59 @@
         "isochrones": "Travel times",
         "geocoding": "Addresses",
         "generatedAt": "Data prepared on {{date}}",
-        "isochronesDetail": "Mapbox; public transport: Geoapify"
+        "isochronesDetail": "Mapbox; public transport: Geoapify",
+        "crous": "CROUS residences and restaurants",
+        "crousDetail": "Cnous, Licence Ouverte, updated {{date}}"
+    },
+    "layers": {
+        "title": "Basemap and layers",
+        "base": "Basemap",
+        "ign": "IGN map",
+        "osm": "OpenStreetMap",
+        "overlays": "Layers",
+        "crousLogements": "CROUS residences",
+        "crousRestaurants": "CROUS restaurants",
+        "crousHint": "Shown from city scale."
+    },
+    "crous": {
+        "logement": "CROUS residence",
+        "book": "Book or find out more",
+        "closed": "closed according to the CROUS",
+        "inZone_one": "{{count}} CROUS residence in the area",
+        "inZone_other": "{{count}} CROUS residences in the area",
+        "noneInZone": "No CROUS residence in the area",
+        "restaurants_one": "{{count}} CROUS restaurant or cafeteria in the area",
+        "restaurants_other": "{{count}} CROUS restaurants or cafeterias in the area",
+        "source": "CROUS residences and restaurants (data.enseignementsup-recherche.gouv.fr)."
+    },
+    "share": {
+        "label": "Share this page",
+        "copied": "Link copied",
+        "copyPrompt": "Copy this link:"
+    },
+    "origin": {
+        "title": "From {{label}}",
+        "compute": "Show institutions reachable within {{time}} min {{mode}}",
+        "count_one": "{{count}} institution reachable within {{time}} min {{mode}}",
+        "count_other": "{{count}} institutions reachable within {{time}} min {{mode}}",
+        "none": "No institution reachable within {{time}} min {{mode}}",
+        "onlyReachable": "Show only these on the map",
+        "showAll": "Show all {{count}} institutions",
+        "myPosition": "My location"
+    },
+    "favorites": {
+        "title": "My favourites",
+        "add": "Add to favourites",
+        "removeThis": "Remove from favourites",
+        "full": "{{max}} favourites at most: remove one to add this one",
+        "remove": "Remove {{name}} from favourites",
+        "compare": "Compare the {{count}} favourites"
+    },
+    "compare": {
+        "title": "Favourites compared",
+        "rent": "Median rent ({{surface}} m²)",
+        "residences": "CROUS residences",
+        "formations": "Parcoursup programmes",
+        "legend": "In green: the largest area, the lowest rent, the most CROUS residences. Median rent of the area's municipalities, for a 20 m² studio."
     }
 }

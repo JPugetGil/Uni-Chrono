@@ -12,6 +12,7 @@ const insa: Etablissement = {
   region: 'Auvergne-Rhône-Alpes',
   statut: 'public',
   types: ["Formations des écoles d'ingénieurs", 'Licence'],
+  filieres: ["Formation d'ingénieur Bac + 5", 'L1 - Mathématiques'],
   category: 'school',
   formations: 4,
   apprentissage: false,

@@ -9,6 +9,11 @@ export const colors = {
   primary: '#1d4ed8',
   /** slate-900 : contour de la commune survolée */
   highlight: '#0f172a',
+  /** Calques CROUS : teintes distinctes des catégories d'établissement */
+  crousLogement: '#6250d6',
+  crousRestaurant: '#c2417a',
+  /** Zone depuis le point de départ : neutre, distincte des catégories */
+  origin: '#334155',
 };
 
 /**

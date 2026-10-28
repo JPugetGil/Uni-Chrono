@@ -1,8 +1,10 @@
 /**
  * Prépare les données servies par l'application dans public/data/ :
  * - etablissements.json : sites d'enseignement (formations Parcoursup de la dernière session)
+ * - filieres.json : libellés des filières, auxquels les sites renvoient par indice
  * - formations/<préfixe UAI>.json : formations de chaque site, chargées à l'ouverture d'une fiche
  * - communes.json : communes et arrondissements avec leur loyer (dernière Carte des loyers)
+ * - crous.json : résidences et restaurants CROUS
  * - meta.json : sources et fraîcheur
  *
  * Usage : node scripts/build-data.ts [--if-missing]
@@ -14,24 +16,31 @@ import { join } from 'node:path';
 import type { DataMeta } from '../src/types/etablissement.ts';
 import {
   type DataGouvDataset,
+  type CrousLogementRaw,
+  type CrousRestaurantRaw,
   type ParcoursupRecord,
   type RawCommune,
   buildCommunes,
+  buildCrous,
   buildSites,
+  indexFilieres,
   latestRentsEdition,
   parseRentsCsv,
 } from './data/transform.ts';
 
 const OUT_DIR = join(import.meta.dirname, '..', 'public', 'data');
-const OUTPUTS = ['etablissements.json', 'communes.json', 'meta.json'];
+const OUTPUTS = ['etablissements.json', 'filieres.json', 'communes.json', 'crous.json', 'meta.json'];
 
-const PARCOURSUP_DATASET = 'https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets/fr-esr-cartographie_formations_parcoursup';
+const ESR_DATASETS = 'https://data.enseignementsup-recherche.gouv.fr/api/explore/v2.1/catalog/datasets';
+const PARCOURSUP_DATASET = `${ESR_DATASETS}/fr-esr-cartographie_formations_parcoursup`;
+const CROUS_LOGEMENTS = `${ESR_DATASETS}/fr_crous_logement_france_entiere`;
+const CROUS_RESTAURANTS = `${ESR_DATASETS}/fr_crous_restauration_france_entiere`;
 const PARCOURSUP_FIELDS = 'etab_uai,etab_nom,tc,tf,nm,fl,app,region,departement,commune,fiche,etab_url,etab_gps';
 const GEO_API = 'https://geo.api.gouv.fr/communes?fields=code,nom,population,centre';
 const RENTS_SEARCH = "https://www.data.gouv.fr/api/1/datasets/?q=carte%20des%20loyers%20indicateurs%20de%20loyers%20d%27annonce%20par%20commune&page_size=20";
 
 /** Seuils sous lesquels les données sont jugées incomplètes : le build échoue plutôt que de publier une carte vide */
-const MINIMUMS = { etablissements: 4000, communes: 30000, rents: 30000 };
+const MINIMUMS = { etablissements: 4000, communes: 30000, rents: 30000, crousLogements: 400, crousRestaurants: 400 };
 
 const getJson = async <T>(url: string): Promise<T> => {
   const response = await fetch(url);
@@ -71,6 +80,8 @@ const main = async () => {
   ]);
   const { etablissements, formationsByPrefix } = buildSites(records);
   check(`Sites (session ${year})`, etablissements.length, MINIMUMS.etablissements);
+  const filieres = indexFilieres(etablissements);
+  console.log(`  filières : ${filieres.labels.length}`);
 
   console.log('Communes et loyers…');
   const edition = latestRentsEdition((await getJson<{ data: DataGouvDataset[] }>(RENTS_SEARCH)).data);
@@ -85,6 +96,16 @@ const main = async () => {
   check('Communes et arrondissements', communeRows.length, MINIMUMS.communes);
   console.log(`  dont avec loyer : ${communeRows.filter((c) => c[5] != null).length}`);
 
+  console.log('CROUS…');
+  const [logementsRaw, restaurantsRaw, crousDataset] = await Promise.all([
+    getJson<CrousLogementRaw[]>(`${CROUS_LOGEMENTS}/exports/json?select=id,title,short_desc,zone,address,bookingurl,interneturl,geocalisation`),
+    getJson<CrousRestaurantRaw[]>(`${CROUS_RESTAURANTS}/exports/json?select=id,title,type,zone,geolocalisation,closing`),
+    getJson<{ metas: { default: { data_processed?: string } } }>(CROUS_LOGEMENTS),
+  ]);
+  const crous = buildCrous(logementsRaw, restaurantsRaw);
+  check('Résidences CROUS', crous.logements.length, MINIMUMS.crousLogements);
+  check('Restaurants CROUS', crous.restaurants.length, MINIMUMS.crousRestaurants);
+
   const meta: DataMeta = {
     generatedAt: new Date().toISOString(),
     parcoursup: {
@@ -95,14 +116,20 @@ const main = async () => {
     },
     rents: { year: edition.year, url: edition.url, datasetUrl: edition.datasetUrl },
     communes: { url: 'https://geo.api.gouv.fr/decoupage-administratif/communes' },
+    crous: {
+      processed: crousDataset.metas.default.data_processed,
+      url: 'https://data.enseignementsup-recherche.gouv.fr/explore/dataset/fr_crous_logement_france_entiere/',
+    },
   };
 
   // Écriture en dernier : un échec plus haut laisse les données précédentes intactes
   await rm(join(OUT_DIR, 'formations'), { recursive: true, force: true });
   await mkdir(join(OUT_DIR, 'formations'), { recursive: true });
   await Promise.all([
-    writeJson(join(OUT_DIR, 'etablissements.json'), etablissements),
+    writeJson(join(OUT_DIR, 'etablissements.json'), filieres.sites),
+    writeJson(join(OUT_DIR, 'filieres.json'), filieres.labels),
     writeJson(join(OUT_DIR, 'communes.json'), communeRows),
+    writeJson(join(OUT_DIR, 'crous.json'), crous),
     ...[...formationsByPrefix].map(([prefix, file]) => writeJson(join(OUT_DIR, 'formations', `${prefix}.json`), file)),
   ]);
   await writeJson(join(OUT_DIR, 'meta.json'), meta);

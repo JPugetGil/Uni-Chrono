@@ -40,7 +40,9 @@
         "searchingPlaces": "Recherche d'adresses…",
         "nameFilter": "Nom : « {{name}} »",
         "removeNameFilter": "Retirer le filtre par nom",
-        "removePlace": "Retirer le repère"
+        "removePlace": "Retirer le repère",
+        "groupFilieres": "Formations",
+        "removeFiliere": "Retirer le filtre par formation"
     },
     "travel": {
         "mode": "Mode de transport",
@@ -180,6 +182,59 @@
         "isochrones": "Temps de trajet",
         "geocoding": "Adresses",
         "generatedAt": "Données préparées le {{date}}",
-        "isochronesDetail": "Mapbox ; transports en commun : Geoapify"
+        "isochronesDetail": "Mapbox ; transports en commun : Geoapify",
+        "crous": "Résidences et restaurants CROUS",
+        "crousDetail": "Cnous, Licence Ouverte, mis à jour le {{date}}"
+    },
+    "layers": {
+        "title": "Fond de carte et calques",
+        "base": "Fond de carte",
+        "ign": "Plan IGN",
+        "osm": "OpenStreetMap",
+        "overlays": "Calques",
+        "crousLogements": "Résidences CROUS",
+        "crousRestaurants": "Restaurants CROUS",
+        "crousHint": "Visibles à partir de l'échelle d'une agglomération."
+    },
+    "crous": {
+        "logement": "Résidence CROUS",
+        "book": "Réserver ou se renseigner",
+        "closed": "fermé d'après le CROUS",
+        "inZone_one": "{{count}} résidence CROUS dans la zone",
+        "inZone_other": "{{count}} résidences CROUS dans la zone",
+        "noneInZone": "Aucune résidence CROUS dans la zone",
+        "restaurants_one": "{{count}} restaurant ou cafétéria CROUS dans la zone",
+        "restaurants_other": "{{count}} restaurants ou cafétérias CROUS dans la zone",
+        "source": "Résidences et restaurants des CROUS (data.enseignementsup-recherche.gouv.fr)."
+    },
+    "share": {
+        "label": "Partager cette fiche",
+        "copied": "Lien copié",
+        "copyPrompt": "Copiez ce lien :"
+    },
+    "origin": {
+        "title": "Depuis {{label}}",
+        "compute": "Voir les établissements accessibles en {{time}} min {{mode}}",
+        "count_one": "{{count}} établissement accessible en {{time}} min {{mode}}",
+        "count_other": "{{count}} établissements accessibles en {{time}} min {{mode}}",
+        "none": "Aucun établissement accessible en {{time}} min {{mode}}",
+        "onlyReachable": "N'afficher que ceux-ci sur la carte",
+        "showAll": "Afficher les {{count}} établissements",
+        "myPosition": "Ma position"
+    },
+    "favorites": {
+        "title": "Mes favoris",
+        "add": "Ajouter aux favoris",
+        "removeThis": "Retirer des favoris",
+        "full": "{{max}} favoris au maximum : retirez-en un pour ajouter celui-ci",
+        "remove": "Retirer {{name}} des favoris",
+        "compare": "Comparer les {{count}} favoris"
+    },
+    "compare": {
+        "title": "Comparaison des favoris",
+        "rent": "Loyer médian ({{surface}} m²)",
+        "residences": "Résidences CROUS",
+        "formations": "Formations Parcoursup",
+        "legend": "En vert : la plus grande zone, le loyer le plus bas, le plus de résidences CROUS. Loyer médian des communes de la zone, pour un studio de 20 m²."
     }
 }

@@ -199,14 +199,119 @@ test('transports en commun : zone calculée à la demande, sans calcul en lot', 
   expect(isochroneCalls).toEqual([{ profile: 'transit', minutes: [5, 10, 15] }]);
 });
 
-test('explique une clé Mapbox refusée au lieu d’échouer en silence', async ({ page }) => {
-  const { isochroneCalls } = await mockApis(page, { mapboxStatus: 401 });
+test('clé Mapbox refusée (401 sans CORS) : l’IGN prend le relais à pied, le vélo explique l’échec', async ({ page }) => {
+  // Comme le vrai Mapbox : le refus arrive sans en-tête CORS, le navigateur n'y voit qu'une erreur réseau
+  const { isochroneCalls } = await mockApis(page, { mapboxStatus: 'blocked' });
   await page.goto('./');
 
   await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
-  await expect(page.getByRole('region', { name: 'En 15 min à pied' })).toContainText('La clé Mapbox a été refusée');
-  // Pas de nouvelle tentative proposée ni effectuée pour une clé refusée
-  await expect(page.getByRole('button', { name: 'Réessayer' })).toHaveCount(0);
-  await page.waitForTimeout(1500);
+  await expect(
+    page.getByRole('region', { name: 'En 15 min à pied' }).getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem')
+  ).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min'], { timeout: 15_000 });
+  // Mapbox essayé puis relancé (erreur réseau), puis une requête IGN par bande
+  expect(isochroneCalls.filter((c) => c.profile === 'walking')).toHaveLength(4);
+  expect(isochroneCalls.filter((c) => c.profile === 'ign-pedestrian').map((c) => c.minutes[0])).toEqual([5, 10, 15]);
+
+  // À vélo, l'IGN ne sait pas calculer : échec annoncé, nouvelle tentative proposée
+  await page.getByRole('radio', { name: 'Vélo' }).check({ force: true });
+  const zone = page.getByRole('region', { name: 'En 15 min à vélo' });
+  await expect(zone).toContainText('Zone indisponible pour le moment', { timeout: 15_000 });
+  await expect(zone.getByRole('button', { name: 'Réessayer' })).toBeVisible();
+});
+
+test('calques CROUS et résidences CROUS dans la zone de l’établissement', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('./');
+
+  await page.getByRole('button', { name: 'Fond de carte et calques' }).click();
+  await page.getByRole('checkbox', { name: 'Résidences CROUS' }).check();
+  await page.keyboard.press('Escape');
+  await searchAndPick(page, 'sciences appliquees', /INSTITUT NATIONAL DES SCIENCES APPLIQUEES/);
+
+  await expect(page.getByRole('button', { name: 'Résidence CROUS : Résidence Jean Zay' })).toBeVisible();
+  const crous = page.getByRole('region', { name: '1 résidence CROUS dans la zone' });
+  await expect(crous).toContainText('Résidence Jean Zay');
+  await expect(crous).toContainText('1 restaurant ou cafétéria CROUS dans la zone');
+});
+
+test('fond de carte Plan IGN par défaut, OpenStreetMap au choix', async ({ page }) => {
+  await mockApis(page);
+  const tiles: string[] = [];
+  page.on('request', (r) => tiles.push(new URL(r.url()).hostname));
+  await page.goto('./');
+  await expect.poll(() => tiles.includes('data.geopf.fr')).toBe(true);
+
+  await page.getByRole('button', { name: 'Fond de carte et calques' }).click();
+  await page.getByRole('radio', { name: 'OpenStreetMap' }).check();
+  await expect.poll(() => tiles.includes('tile.openstreetmap.org')).toBe(true);
+});
+
+test('filtre par formation depuis la recherche', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('./');
+
+  await page.getByRole('combobox', { name: /Rechercher/ }).fill('informatique');
+  const option = page.getByRole('listbox').getByRole('option', { name: /BUT - Informatique/ });
+  await expect(option).toContainText('2 établissements');
+  await option.click();
+
+  await expect(page.getByRole('button', { name: 'Retirer le filtre par formation' })).toBeVisible();
+  await expect(legendCount(page, 'Université')).toContainText('2');
+  await expect(legendCount(page, 'École spécialisée')).toContainText('0');
+  expect(new URL(page.url()).searchParams.get('formation')).toBe('BUT - Informatique');
+});
+
+test('un lien partagé rouvre la fiche avec son trajet', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page);
+  await page.goto('./?etab=0694123A&mode=cycling&duree=30');
+
+  await expect(page.getByRole('heading', { level: 2, name: 'ECOLE NORMALE SUPERIEURE DE LYON' })).toBeVisible();
+  await expect(page.getByRole('region', { name: 'En 30 min à vélo' })).toBeVisible();
+  expect(isochroneCalls[0]).toEqual({ profile: 'cycling', minutes: [10, 20, 30] });
+
+  // L'URL suit la navigation
+  await page.getByRole('radio', { name: '45 minutes' }).check({ force: true });
+  await expect.poll(() => new URL(page.url()).searchParams.get('duree')).toBe('45');
+  await page.keyboard.press('Escape');
+  await expect.poll(() => new URL(page.url()).searchParams.get('etab')).toBeNull();
+});
+
+test('établissements accessibles depuis une adresse', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page);
+  await page.goto('./');
+
+  await searchAndPick(page, 'albert einstein', /20 Avenue Albert Einstein/);
+  const origin = page.getByRole('region', { name: /Depuis 20 Avenue Albert Einstein/ });
+  await origin.getByRole('button', { name: 'Voir les établissements accessibles en 15 min à pied' }).click();
+
+  // Zone simulée de ±0,012° autour de l'adresse : l'INSA et l'IUT, pas l'ENS
+  await expect(origin).toContainText('2 établissements accessibles en 15 min à pied');
+  await expect(origin.getByRole('listitem')).toHaveCount(2);
   expect(isochroneCalls).toEqual([{ profile: 'walking', minutes: [5, 10, 15] }]);
+  await expect(legendCount(page, 'Université')).toContainText('1');
+  expect(new URL(page.url()).searchParams.get('depuis')).toBe('45.7826,4.8737');
+
+  await origin.getByRole('button', { name: /IUT LYON 1/ }).click();
+  await expect(page.getByRole('heading', { level: 2, name: 'IUT LYON 1' })).toBeVisible();
+});
+
+test('favoris et comparaison', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('./');
+
+  for (const [query, name] of [['sciences appliquees', /INSTITUT NATIONAL DES SCIENCES APPLIQUEES/], ['iut lyon', /IUT LYON 1/]] as const) {
+    await searchAndPick(page, query, name);
+    await page.getByRole('button', { name: 'Ajouter aux favoris' }).click();
+    await expect(page.getByRole('button', { name: 'Retirer des favoris' })).toHaveAttribute('aria-pressed', 'true');
+    await page.keyboard.press('Escape');
+  }
+
+  const favorites = page.getByRole('region', { name: 'Mes favoris' });
+  await expect(favorites.getByRole('listitem')).toHaveCount(2);
+  await favorites.getByRole('button', { name: 'Comparer les 2 favoris' }).click();
+
+  const compare = page.getByRole('article', { name: 'Comparaison des favoris' });
+  await expect(compare.getByRole('listitem')).toHaveCount(2);
+  await expect(compare.getByRole('listitem').first()).toContainText('Résidences CROUS1');
+  await expect(compare.getByRole('listitem').nth(1)).toContainText('Formations Parcoursup2');
 });
