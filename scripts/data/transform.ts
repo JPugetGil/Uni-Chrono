@@ -4,6 +4,7 @@
  */
 import type { Etablissement, EtablissementCategory, Formation, Statut } from '../../src/types/etablissement.ts';
 import type { CommuneRow } from '../../src/types/commune.ts';
+import type { CrousData } from '../../src/types/crous.ts';
 
 /** Enregistrement de « Cartographie des formations Parcoursup » (champs utilisés) */
 export interface ParcoursupRecord {
@@ -134,6 +135,9 @@ export const buildSites = (records: ParcoursupRecord[]): SitesResult => {
     const first = group[0];
     const names = group.map((r) => cleanName(r.etab_nom ?? '')).filter(Boolean);
     const types = [...new Set(group.flatMap((r) => r.tf ?? []))].sort((a, b) => a.localeCompare(b, 'fr'));
+    const filieres = [...new Set(group.map((r) => r.fl?.[0]).filter((f): f is string => !!f))].sort((a, b) =>
+      a.localeCompare(b, 'fr')
+    );
     const formations: Formation[] = group.map((r) => ({
       nom: r.nm?.[0] ?? r.fl?.[0] ?? '',
       type: r.tf?.[0] ?? '',
@@ -151,6 +155,7 @@ export const buildSites = (records: ParcoursupRecord[]): SitesResult => {
       region: first.region ?? '',
       statut: mostFrequent(group.map((r) => statutOf(r.tc)), () => 0),
       types,
+      filieres,
       category: categoryOfTypes(types),
       formations: group.length,
       apprentissage: formations.some((f) => f.apprentissage),
@@ -252,3 +257,72 @@ export const latestRentsEdition = (datasets: DataGouvDataset[]) => {
   if (editions.length === 0) throw new Error('Aucune édition de la Carte des loyers trouvée');
   return editions[0];
 };
+
+/** Site tel qu'écrit dans etablissements.json : filières remplacées par leur rang dans filieres.json */
+export type StoredEtablissement = Omit<Etablissement, 'filieres'> & { filieres: number[] };
+
+/** Dictionnaire des filières (trié) et sites qui y renvoient par indice : fichier plus léger */
+export const indexFilieres = (etablissements: Etablissement[]): { labels: string[]; sites: StoredEtablissement[] } => {
+  const labels = [...new Set(etablissements.flatMap((e) => e.filieres))].sort((a, b) => a.localeCompare(b, 'fr'));
+  const rank = new Map(labels.map((label, i) => [label, i]));
+  return { labels, sites: etablissements.map((e) => ({ ...e, filieres: e.filieres.map((f) => rank.get(f)!) })) };
+};
+
+type GeoPoint = { lat: number; lon: number } | null | undefined;
+
+export interface CrousLogementRaw {
+  id: string | number;
+  title: string | null;
+  short_desc?: string | null;
+  zone?: string | null;
+  address?: string | null;
+  bookingurl?: string | null;
+  interneturl?: string | null;
+  geocalisation?: GeoPoint;
+}
+
+export interface CrousRestaurantRaw {
+  id: string | number;
+  title: string | null;
+  type?: string | null;
+  zone?: string | null;
+  geolocalisation?: GeoPoint;
+  closing?: number | string | null;
+}
+
+const validPoint = (p: GeoPoint): p is { lat: number; lon: number } =>
+  !!p && Number.isFinite(p.lat) && Number.isFinite(p.lon) && !(p.lat === 0 && p.lon === 0);
+
+const tidy = (value: string | null | undefined): string | undefined => value?.replace(/\s+/g, ' ').trim() || undefined;
+
+/** Résidences et restaurants CROUS géolocalisés ; « closing » à 1 signale un lieu fermé */
+export const buildCrous = (logements: CrousLogementRaw[], restaurants: CrousRestaurantRaw[]): CrousData => ({
+  logements: logements
+    .filter((l) => tidy(l.title) && validPoint(l.geocalisation))
+    .map((l) => {
+      const url = tidy(l.bookingurl) ?? tidy(l.interneturl);
+      return {
+        id: String(l.id),
+        nom: tidy(l.title)!,
+        ville: tidy(l.zone) ?? '',
+        ...(tidy(l.address) ? { adresse: tidy(l.address) } : {}),
+        ...(tidy(l.short_desc) ? { description: tidy(l.short_desc) } : {}),
+        lat: round(l.geocalisation!.lat, 5),
+        lon: round(l.geocalisation!.lon, 5),
+        ...(url ? { url } : {}),
+      };
+    })
+    .sort((a, b) => a.id.localeCompare(b.id)),
+  restaurants: restaurants
+    .filter((r) => tidy(r.title) && validPoint(r.geolocalisation))
+    .map((r) => ({
+      id: String(r.id),
+      nom: tidy(r.title)!,
+      type: tidy(r.type) ?? 'Restaurant',
+      ville: tidy(r.zone) ?? '',
+      lat: round(r.geolocalisation!.lat, 5),
+      lon: round(r.geolocalisation!.lon, 5),
+      ferme: Number(r.closing) === 1,
+    }))
+    .sort((a, b) => a.id.localeCompare(b.id)),
+});

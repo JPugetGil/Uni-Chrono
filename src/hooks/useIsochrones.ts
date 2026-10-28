@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Isochrone, bandMinutes } from '../types/isochrone';
 import { Etablissement } from '../types/etablissement';
-import { fetchIsochroneData } from '../mapboxFetcher';
+import { fetchZone } from '../isochroneProvider';
 import { TransportMode } from '../types/transport';
 import { etabId } from '../utils/filters';
 import { IsochroneErrorKind, errorKindOf } from '../isochroneError';
@@ -74,7 +74,7 @@ export const useIsochrones = (
       const minutes = bandMinutes(timeInMinutes);
       for (const etablissement of todo) {
         const id = etabId(etablissement);
-        fetchIsochroneData(
+        fetchZone(
           etablissement.coordonnees.lat,
           etablissement.coordonnees.lon,
           minutes,

@@ -11,7 +11,7 @@ import MapControl from './MapControl';
  * Bouton « Ma position » : centre la carte sur la position de l'utilisateur
  * et affiche un point avec le cercle de précision.
  */
-const LocateButton: React.FC = () => {
+const LocateButton: React.FC<{ onLocated?: (lat: number, lon: number) => void }> = ({ onLocated }) => {
   const map = useMap();
   const { t } = useTranslation();
   const [position, setPosition] = useState<[number, number] | null>(null);
@@ -30,7 +30,9 @@ const LocateButton: React.FC = () => {
         setPosition(p);
         setAccuracy(pos.coords.accuracy);
         setStatus('idle');
-        map.flyTo(p, Math.max(map.getZoom(), 12), { duration: 0.75 });
+        // La position devient le point de départ (l'app cadre la carte), sinon on s'y déplace
+        if (onLocated) onLocated(p[0], p[1]);
+        else map.flyTo(p, Math.max(map.getZoom(), 12), { duration: 0.75 });
       },
       () => setStatus('error'),
       { enableHighAccuracy: true, timeout: 10000 }

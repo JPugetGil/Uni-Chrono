@@ -18,6 +18,10 @@ interface ExplorePanelProps {
   onShowHelp: () => void;
   /** Réglages de trajet (mode, durée) */
   travelSettings: React.ReactNode;
+  /** Point de départ choisi (adresse, position) et établissements accessibles */
+  originPanel?: React.ReactNode;
+  /** Favoris et accès à la comparaison */
+  favoritesSection?: React.ReactNode;
   etablissements: Etablissement[] | undefined;
   filteredEtablissements: Etablissement[];
   filters: Filters;
@@ -32,6 +36,8 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
   onDismissOnboarding,
   onShowHelp,
   travelSettings,
+  originPanel,
+  favoritesSection,
   etablissements,
   filteredEtablissements,
   filters,
@@ -39,7 +45,7 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
   onFiltersReset,
 }) => {
   const { t } = useTranslation();
-  const activeFilters = countActiveFilters({ ...filters, name: undefined });
+  const activeFilters = countActiveFilters({ ...filters, name: undefined, filiere: undefined });
 
   return (
     <div className="flex flex-col gap-5">
@@ -57,7 +63,11 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
         </div>
       )}
 
+      {originPanel}
+
       {onboardingVisible && <Onboarding onDismiss={onDismissOnboarding} />}
+
+      {favoritesSection}
 
       {travelSettings}
 

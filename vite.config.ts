@@ -87,7 +87,22 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/(?:[abc]\.tile\.openstreetmap\.org)\/.*/i,
+            // Fond de carte Plan IGN (Géoplateforme)
+            urlPattern: /^https:\/\/data\.geopf\.fr\/wmts.*/i,
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'ign-tiles',
+              expiration: {
+                maxEntries: 300,
+                maxAgeSeconds: 60 * 60 * 24 * 7
+              },
+              cacheableResponse: {
+                statuses: [0, 200]
+              }
+            }
+          },
+          {
+            urlPattern: /^https:\/\/(?:[abc]\.)?tile\.openstreetmap\.org\/.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'osm-tiles',

@@ -32,6 +32,8 @@ export interface Etablissement {
   statut: Statut;
   /** Types de formation proposés (BTS, Licence, CPGE…), triés */
   types: string[];
+  /** Filières proposées (« BTS - Services informatiques aux organisations »…), triées */
+  filieres: string[];
   category: EtablissementCategory;
   /** Nombre de formations sur Parcoursup */
   formations: number;
@@ -58,4 +60,5 @@ export interface DataMeta {
   parcoursup: { year: number; modified?: string; processed?: string; url: string };
   rents: { year: number; url: string; datasetUrl: string };
   communes: { url: string };
+  crous: { processed?: string; url: string };
 }

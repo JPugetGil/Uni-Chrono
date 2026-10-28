@@ -24,6 +24,6 @@ export default defineConfig({
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,
     // Clés factices (services simulés) : active les isochrones et le mode transports
-    env: { VITE_MAPBOX_API_KEY: 'e2e-mapbox', VITE_GEOAPIFY_API_KEY: 'e2e-geoapify' },
+    env: { VITE_MAPBOX_API_KEY: 'pk.e2e-mapbox', VITE_GEOAPIFY_API_KEY: 'e2e-geoapify' },
   },
 })

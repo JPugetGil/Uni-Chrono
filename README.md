@@ -10,7 +10,12 @@ Uni-Chrono shows where you can study after the baccalauréat in France (every pr
 - One search box for institutions, cities and addresses; cascading region → department → city filters, programme type and status (public, private under contract, private).
 - Isochrones on demand, for the selected site or for every site in view, with time bands (for example 5, 10 and 15 minutes).
 - For each reachable area: surface, municipalities (Paris, Lyon and Marseille by arrondissement), median rent, and a list of municipalities with their advertised rent per m² and an estimated monthly rent.
-- For each site: its Parcoursup programmes with links to their Parcoursup pages, status and website.
+- For each site: its Parcoursup programmes with links to their Parcoursup pages, status, website, and the CROUS residences in its reachable area.
+- From an address or your location: the sites reachable within the chosen time, by time band.
+- Search by programme ("BTS - Services informatiques aux organisations"…) to keep only the sites offering it.
+- Favourites (up to 4) compared side by side: area, municipalities, median rent, CROUS residences, programmes.
+- Shareable links: the URL carries the opened site, the starting point, the mode, the duration and the filters.
+- IGN map (default) or OpenStreetMap basemap; CROUS residences and restaurants layers.
 - Desktop side panel, mobile bottom sheet; installable as a PWA.
 
 ### Data
@@ -21,7 +26,9 @@ Uni-Chrono shows where you can study after the baccalauréat in France (every pr
 |------|---------|--------|
 | `etablissements.json` | Sites: one institution (UAI) at one location, with its programme types, category and status | "Cartographie des formations Parcoursup", latest session (MESR, Licence Ouverte) |
 | `formations/<UAI prefix>.json` | Programmes of each site, loaded when a site is opened | same |
+| `filieres.json` | Programme labels, referenced by index from the sites | same |
 | `communes.json` | Municipalities and the arrondissements of Paris, Lyon and Marseille, with their advertised rent | geo.api.gouv.fr and the latest "Carte des loyers" (ANIL, data.gouv.fr) |
+| `crous.json` | CROUS residences and restaurants | CROUS datasets (data.enseignementsup-recherche.gouv.fr, Licence Ouverte) |
 | `meta.json` | Sources and preparation date, shown in the app | |
 
 The script fails if a source returns too few rows, so a broken source never replaces good data. The deployment workflow runs it on every push to `main` and every Monday.
@@ -30,13 +37,14 @@ The script fails if a source returns too few rows, so a broken source never repl
 
 | What | Service | Key |
 |------|---------|-----|
-| Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` |
+| Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` (public `pk.` token) |
+| Isochrones (walking, driving) without Mapbox, or when Mapbox fails | Géoplateforme isochrone service (IGN) | none |
 | Isochrones (public transport, optional) | Geoapify Isoline API, `transit` mode (free plan: 3,000 credits a day, shared by all visitors) | `VITE_GEOAPIFY_API_KEY` |
 | Address search | Géoplateforme geocoding (IGN) | none |
 | Municipality contours | geo.api.gouv.fr | none |
-| Basemap | OpenStreetMap tiles via Leaflet | none |
+| Basemaps | Plan IGN (Géoplateforme WMTS), OpenStreetMap tiles | none |
 
-API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions). Without a Mapbox key the app explains that areas are unavailable; without a Geoapify key the public transport mode is hidden. Public transport areas are computed only for the opened institution, to protect the shared quota.
+API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions). Without a Mapbox key, walking and driving areas come from the IGN service and cycling explains that it is unavailable; without a Geoapify key the public transport mode is hidden. Computing every site in view at once is reserved for Mapbox; with IGN and Geoapify, areas are computed for the opened site only, to spare these shared services. Mapbox answers a refused key with a 401 without CORS headers, which a browser cannot tell from a network error: the app therefore falls back to IGN on any Mapbox failure.
 
 ### Run locally
 

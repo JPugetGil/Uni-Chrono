@@ -1,6 +1,6 @@
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Building2, ListFilter, LoaderCircle, MapPin, Search, X } from 'lucide-react';
+import { Building2, GraduationCap, ListFilter, LoaderCircle, MapPin, Search, X } from 'lucide-react';
 import { Etablissement } from '../types/etablissement';
 import { Place } from '../geocodingFetcher';
 import { useGeocoder } from '../hooks/useGeocoder';
@@ -17,16 +17,20 @@ interface SearchBoxProps {
   onSelectCity: (etabs: Etablissement[]) => void;
   onSelectPlace: (place: Place) => void;
   onApplyNameFilter: (name: string) => void;
+  /** Filière choisie : seuls les sites qui la proposent restent affichés */
+  onApplyFiliere: (filiere: string) => void;
 }
 
 type Suggestion =
   | { kind: 'filter'; key: string; count: number }
   | { kind: 'etab'; key: string; etab: Etablissement; name: string }
+  | { kind: 'filiere'; key: string; label: string; count: number }
   | { kind: 'city'; key: string; name: string; dep?: string | null; etabs: Etablissement[] }
   | { kind: 'place'; key: string; place: Place };
 
 const MAX_ETABS = 5;
 const MAX_CITIES = 3;
+const MAX_FILIERES = 4;
 
 /** Rang d'une correspondance : début du texte, début d'un mot, ailleurs */
 const rank = (text: string, query: string) => (text.startsWith(query) ? 0 : text.includes(` ${query}`) ? 1 : 2);
@@ -35,7 +39,14 @@ const rank = (text: string, query: string) => (text.startsWith(query) ? 0 : text
  * Recherche unique : établissements et villes (données chargées, sans accents),
  * adresses (Géoplateforme), ou filtre par nom. Combobox ARIA au clavier.
  */
-const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onSelectCity, onSelectPlace, onApplyNameFilter }) => {
+const SearchBox: React.FC<SearchBoxProps> = ({
+  etablissements,
+  onSelectEtab,
+  onSelectCity,
+  onSelectPlace,
+  onApplyNameFilter,
+  onApplyFiliere,
+}) => {
   const { t } = useTranslation();
   const listId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -57,7 +68,12 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
       city.etabs.push(e);
       cities.set(cityKey, city);
     }
-    return { etabs, cities: [...cities.values()] };
+    const filiereCounts = new Map<string, number>();
+    for (const e of etablissements ?? []) {
+      for (const f of e.filieres) filiereCounts.set(f, (filiereCounts.get(f) ?? 0) + 1);
+    }
+    const filieres = [...filiereCounts].map(([label, count]) => ({ label, count, key: normalizeText(label) }));
+    return { etabs, cities: [...cities.values()], filieres };
   }, [etablissements]);
 
   const suggestions = useMemo((): Suggestion[] => {
@@ -67,6 +83,10 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
       .filter((x) => matchesAllWords(x.key, q))
       .sort((a, b) => rank(a.normalizedName, q) - rank(b.normalizedName, q) || a.name.length - b.name.length);
     const nameMatches = (etablissements ?? []).filter((e) => matchesFilters(e, { name: query })).length;
+    const filiereMatches = index.filieres
+      .filter((f) => matchesAllWords(f.key, q))
+      .sort((a, b) => rank(a.key, q) - rank(b.key, q) || b.count - a.count)
+      .slice(0, MAX_FILIERES);
     const cityMatches = index.cities
       .filter((c) => c.key.includes(q))
       .sort((a, b) => rank(a.key, q) - rank(b.key, q) || b.etabs.length - a.etabs.length)
@@ -74,6 +94,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
     return [
       ...(nameMatches > 0 ? [{ kind: 'filter' as const, key: 'filter', count: nameMatches }] : []),
       ...etabMatches.slice(0, MAX_ETABS).map((x) => ({ kind: 'etab' as const, key: `etab-${etabId(x.etab)}`, etab: x.etab, name: x.name })),
+      ...filiereMatches.map((f) => ({ kind: 'filiere' as const, key: `filiere-${f.label}`, label: f.label, count: f.count })),
       ...cityMatches.map((c) => ({ kind: 'city' as const, key: `city-${c.name}-${c.dep}`, name: c.name, dep: c.dep, etabs: c.etabs })),
       ...places.map((p) => ({ kind: 'place' as const, key: `place-${p.id}`, place: p })),
     ];
@@ -84,6 +105,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
   const choose = (s: Suggestion) => {
     if (s.kind === 'filter') onApplyNameFilter(query.trim());
     else if (s.kind === 'etab') onSelectEtab(etabId(s.etab));
+    else if (s.kind === 'filiere') onApplyFiliere(s.label);
     else if (s.kind === 'city') onSelectCity(s.etabs);
     else onSelectPlace(s.place);
     setQuery('');
@@ -119,6 +141,7 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
   const optionId = (i: number) => `${listId}-option-${i}`;
   const groupTitle: Partial<Record<Suggestion['kind'], string>> = {
     etab: t('search.groupEtablissements'),
+    filiere: t('search.groupFilieres'),
     city: t('search.groupCities'),
     place: t('search.groupPlaces'),
   };
@@ -213,6 +236,13 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
                       {[s.etab.commune, s.etab.types.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
                     </span>
                   </span>
+                </>
+              )}
+              {s.kind === 'filiere' && (
+                <>
+                  <GraduationCap aria-hidden className="size-4 shrink-0 text-slate-500" />
+                  <span className="min-w-0 flex-1 truncate">{s.label}</span>
+                  <span className="text-xs text-slate-500">{t('search.cityCount', { count: s.count })}</span>
                 </>
               )}
               {s.kind === 'city' && (

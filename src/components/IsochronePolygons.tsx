@@ -12,6 +12,10 @@ interface IsochronePolygonsProps {
   filters: Filters;
   hoveredEtabId: string | null;
   selectedEtabId: string | null;
+  /** Zone depuis le point de départ : remplace la vue d'ensemble */
+  originIsochrone?: Isochrone | null;
+  /** Zones des favoris comparés, chacune dans sa couleur */
+  compareZones?: Isochrone[];
 }
 
 /** Isochrone mise en avant : bandes de temps superposées, la plus lointaine en trait plein */
@@ -63,6 +67,8 @@ const IsochronePolygons: React.FC<IsochronePolygonsProps> = ({
   filters,
   hoveredEtabId,
   selectedEtabId,
+  originIsochrone,
+  compareZones,
 }) => {
   const byId = useMemo(() => new Map(etablissements.map((e) => [etabId(e), e])), [etablissements]);
 
@@ -72,9 +78,26 @@ const IsochronePolygons: React.FC<IsochronePolygonsProps> = ({
     return selected ? <FocusedIsochrone isochrone={selected} selected /> : null;
   }
 
+  if (compareZones && compareZones.length > 0) {
+    return (
+      <>
+        {compareZones.map((zone) => (
+          <Polygon
+            key={zone.etablissementId}
+            positions={zone.coordinates}
+            interactive={false}
+            pathOptions={{ color: zone.color, weight: 2.5, opacity: 1, fillColor: zone.color, fillOpacity: 0.12 }}
+          />
+        ))}
+      </>
+    );
+  }
+
   // Survol d'un établissement dont la zone est calculée ; sinon la vue d'ensemble reste affichée
   const hovered = hoveredEtabId ? isochrones.find((iso) => iso.etablissementId === hoveredEtabId) : undefined;
   if (hovered) return <FocusedIsochrone isochrone={hovered} selected={false} />;
+
+  if (originIsochrone) return <FocusedIsochrone isochrone={originIsochrone} selected />;
 
   // Vue d'ensemble : un seul chemin « union » de tous les anneaux avec fillRule
   // 'nonzero' — les recouvrements ne s'empilent pas, la carte reste lisible
