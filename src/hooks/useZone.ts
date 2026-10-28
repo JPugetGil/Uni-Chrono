@@ -19,7 +19,7 @@ export const useZone = (
   point: { lat: number; lon: number } | null,
   timeInMinutes: number,
   mode: TransportMode,
-  { enabled = true, color, etablissementId }: { enabled?: boolean; color: string; etablissementId?: string }
+  { enabled = true, etablissementId }: { enabled?: boolean; etablissementId?: string } = {}
 ) => {
   const lat = point?.lat;
   const lon = point?.lon;
@@ -63,8 +63,8 @@ export const useZone = (
   const bands = cached ?? settled?.bands ?? null;
   const isochrone = useMemo<Isochrone | null>(() => {
     const outer = bands?.[bands.length - 1];
-    return outer ? { coordinates: outer.coordinates, bands: bands ?? undefined, color, etablissementId } : null;
-  }, [bands, color, etablissementId]);
+    return outer ? { coordinates: outer.coordinates, bands: bands ?? undefined, etablissementId } : null;
+  }, [bands, etablissementId]);
 
   return {
     isochrone,

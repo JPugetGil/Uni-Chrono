@@ -8,7 +8,7 @@ Uni-Chrono shows where you can study after the baccalauréat in France (every pr
 
 - Map of the ~8,300 sites offering Parcoursup programmes, grouped into clusters and coloured by category (university or IUT, specialised school, high school or CFA, other).
 - One search box for institutions, programmes, cities and addresses; cascading region → department → city filters, programme type and status (public, private under contract, private).
-- The reachable area of the opened site, with time bands (for example 5, 10 and 15 minutes). Areas are cached for the session, per position (about 11 m, so the sites of one campus share theirs), mode and duration, and shared by the site panel, the starting point and the comparison.
+- The reachable area of the opened site, with time bands (for example 5, 10 and 15 minutes), each in its own colour (violet, teal, yellow; readable with colour vision deficiencies). Areas are cached for the session, per position (about 11 m, so the sites of one campus share theirs), mode and duration, and shared by the site panel, the starting point and the comparison.
 - For each reachable area: surface, municipalities (Paris, Lyon and Marseille by arrondissement), median rent, and a list of municipalities with their advertised rent per m² and an estimated monthly rent.
 - For each site: its Parcoursup programmes with links to their Parcoursup pages, status, website, and the CROUS residences in its reachable area.
 - From an address or your location: the sites reachable within the chosen time, by time band.

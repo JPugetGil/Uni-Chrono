@@ -6,6 +6,7 @@ import { TransportMode } from '../types/transport';
 import { IsochroneErrorKind } from '../isochroneError';
 import { ReachableEtablissement } from '../utils/reachable';
 import { CategoryDot } from './Legend';
+import { BandSwatch } from './ZoneSummary';
 
 const VISIBLE_ROWS = 10;
 
@@ -19,6 +20,8 @@ interface OriginPanelProps {
   provider: string;
   /** Établissements accessibles (null tant que la zone n'est pas calculée) */
   reachable: ReachableEtablissement[] | null;
+  /** Durées des bandes de la zone (min), pour la couleur de chaque ligne */
+  bands?: number[];
   reachableOnly: boolean;
   onReachableOnlyChange: (value: boolean) => void;
   timeInMinutes: number;
@@ -37,6 +40,7 @@ const OriginPanel: React.FC<OriginPanelProps> = ({
   error,
   provider,
   reachable,
+  bands = [],
   reachableOnly,
   onReachableOnlyChange,
   timeInMinutes,
@@ -111,7 +115,10 @@ const OriginPanel: React.FC<OriginPanelProps> = ({
                         </span>
                       </span>
                       {minutes > 0 && (
-                        <span className="text-xs whitespace-nowrap text-slate-600">{t('zone.bandLabel', { time: minutes })}</span>
+                        <span className="flex items-center gap-1.5 text-xs whitespace-nowrap text-slate-600">
+                          {bands.includes(minutes) && <BandSwatch index={bands.indexOf(minutes)} count={bands.length} />}
+                          {t('zone.bandLabel', { time: minutes })}
+                        </span>
                       )}
                     </button>
                   </li>

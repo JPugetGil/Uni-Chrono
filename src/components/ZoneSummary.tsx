@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { Bike, Car, Footprints, LoaderCircle, TramFront, TriangleAlert } from 'lucide-react';
 import Button from '../design-system/Button';
-import { Isochrone, bandOpacity } from '../types/isochrone';
+import { BAND_FILL_OPACITY, Isochrone, bandColor } from '../types/isochrone';
 import { TransportMode } from '../types/transport';
 import { HousingStatus } from '../hooks/useHousing';
 import { isochroneAreaKm2 } from '../utils/geo';
@@ -33,6 +33,16 @@ interface ZoneSummaryProps {
   surface: number;
   onRetry?: () => void;
 }
+
+/** Pastille d'une bande de temps, comme sur la carte : remplissage translucide et contour */
+export const BandSwatch: React.FC<{ index: number; count: number }> = ({ index, count }) => {
+  const { fill, line } = bandColor(index, count);
+  return (
+    <span aria-hidden className="relative h-3 w-5 shrink-0 overflow-hidden rounded-sm bg-white" style={{ boxShadow: `inset 0 0 0 1.5px ${line}` }}>
+      <span className="absolute inset-0" style={{ background: fill, opacity: BAND_FILL_OPACITY }} />
+    </span>
+  );
+};
 
 const Stat: React.FC<{ label: string; value: string; hint?: string }> = ({ label, value, hint }) => (
   <div className="min-w-0">
@@ -93,16 +103,7 @@ const ZoneSummary: React.FC<ZoneSummaryProps> = ({
           <ul aria-label={t('zone.bands')} className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-700">
             {bands.map((minutes, i) => (
               <li key={minutes} className="flex items-center gap-1.5">
-                <span
-                  aria-hidden
-                  className="relative h-3 w-5 overflow-hidden rounded-sm"
-                  style={{ boxShadow: `inset 0 0 0 1.5px ${isochrone.color}` }}
-                >
-                  <span
-                    className="absolute inset-0"
-                    style={{ background: isochrone.color, opacity: bandOpacity(i, bands.length) }}
-                  />
-                </span>
+                <BandSwatch index={i} count={bands.length} />
                 {t('zone.bandLabel', { time: minutes })}
               </li>
             ))}
