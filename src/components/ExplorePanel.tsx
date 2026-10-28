@@ -2,12 +2,10 @@ import { useTranslation } from 'react-i18next';
 import { CircleHelp, SlidersHorizontal } from 'lucide-react';
 import IconButton from '../design-system/IconButton';
 import { Etablissement } from '../types/etablissement';
-import { TransportMode } from '../types/transport';
 import { Filters, countActiveFilters } from '../utils/filters';
 import Brand from './Brand';
 import LanguageSwitcher from './LanguageSwitcher';
 import Onboarding from './Onboarding';
-import TravelSettings from './TravelSettings';
 import FilterPanel from './FilterPanel';
 import Legend from './Legend';
 
@@ -17,10 +15,8 @@ interface ExplorePanelProps {
   onboardingVisible: boolean;
   onDismissOnboarding: () => void;
   onShowHelp: () => void;
-  timeInMinutes: number;
-  onTimeChange: (value: number) => void;
-  transportMode: TransportMode;
-  onTransportModeChange: (value: TransportMode) => void;
+  /** Réglages de trajet (mode, durée) */
+  travelSettings: React.ReactNode;
   etablissements: Etablissement[] | undefined;
   filteredEtablissements: Etablissement[];
   filters: Filters;
@@ -34,10 +30,7 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
   onboardingVisible,
   onDismissOnboarding,
   onShowHelp,
-  timeInMinutes,
-  onTimeChange,
-  transportMode,
-  onTransportModeChange,
+  travelSettings,
   etablissements,
   filteredEtablissements,
   filters,
@@ -65,12 +58,7 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
 
       {onboardingVisible && <Onboarding onDismiss={onDismissOnboarding} />}
 
-      <TravelSettings
-        timeInMinutes={timeInMinutes}
-        onTimeChange={onTimeChange}
-        transportMode={transportMode}
-        onTransportModeChange={onTransportModeChange}
-      />
+      {travelSettings}
 
       <section aria-labelledby="filters-title" className="flex flex-col gap-3">
         <h2 id="filters-title" className="flex items-center gap-2 text-sm font-semibold text-slate-900">

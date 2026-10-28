@@ -4,7 +4,8 @@ import { MapPin } from 'lucide-react';
 import Button from '../design-system/Button';
 import SegmentedControl from '../design-system/SegmentedControl';
 import { cx } from '../design-system/cx';
-import { HousingCommune, HousingStatus } from '../hooks/useHousing';
+import { HousingStatus } from '../hooks/useHousing';
+import { HousingCommune } from '../utils/housing';
 import { useFormatters } from '../i18n/useFormatters';
 
 /** Surfaces proposées pour l'estimation mensuelle : studio, T1, T2 */

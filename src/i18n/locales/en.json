@@ -146,5 +146,10 @@
         "services": "Services",
         "openingDate": "Opening date",
         "coordinates": "Coordinates"
+    },
+    "error": {
+        "title": "Something went wrong",
+        "description": "The application ran into an unexpected problem. Reloading the page should fix it.",
+        "reload": "Reload the page"
     }
 }

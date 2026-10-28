@@ -5,7 +5,8 @@ import IconButton from '../design-system/IconButton';
 import { Etablissement, getEtablissementCategory, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import { TransportMode } from '../types/transport';
-import { medianRent, useHousing } from '../hooks/useHousing';
+import { useHousing } from '../hooks/useHousing';
+import { medianRent } from '../utils/housing';
 import { useFormatters } from '../i18n/useFormatters';
 import { CategoryDot } from './Legend';
 import ZoneSummary, { ZoneStatus } from './ZoneSummary';
@@ -22,6 +23,8 @@ interface EtablissementDetailsProps {
   pinnedCommune: string | null;
   onPinCommune: (code: string | null) => void;
   onHoverCommune: (code: string | null) => void;
+  /** Réglages de trajet (mode, durée), modifiables sans quitter la fiche */
+  travelSettings: React.ReactNode;
 }
 
 const Row: React.FC<{ label: string; value?: React.ReactNode }> = ({ label, value }) => (
@@ -46,6 +49,7 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   pinnedCommune,
   onPinCommune,
   onHoverCommune,
+  travelSettings,
 }) => {
   const { t } = useTranslation();
   const fmt = useFormatters();
@@ -94,6 +98,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
           )}
         </div>
       </header>
+
+      {travelSettings}
 
       <ZoneSummary
         status={zoneStatus}

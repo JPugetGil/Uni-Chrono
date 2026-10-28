@@ -146,5 +146,10 @@
         "services": "Services",
         "openingDate": "Date d'ouverture",
         "coordinates": "Coordonnées"
+    },
+    "error": {
+        "title": "Une erreur est survenue",
+        "description": "L'application a rencontré un problème inattendu. Recharger la page devrait suffire.",
+        "reload": "Recharger la page"
     }
 }
