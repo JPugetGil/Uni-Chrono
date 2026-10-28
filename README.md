@@ -39,7 +39,7 @@ The script fails if a source returns too few rows, so a broken source never repl
 |------|---------|-----|
 | Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` (public `pk.` token) |
 | Isochrones (walking, driving) without Mapbox, or when Mapbox fails | Géoplateforme isochrone service (IGN) | none |
-| Isochrones (public transport, optional) | Geoapify Isoline API, `transit` mode (free plan: 3,000 credits a day, shared by all visitors) | `VITE_GEOAPIFY_API_KEY` |
+| Isochrones (public transport, optional) | Geoapify Isoline API, `approximated_transit` mode: an estimate from OpenStreetMap transit lines, without timetables (the `transit` mode gave areas smaller than walking in French cities). Free plan: 3,000 credits a day, shared by all visitors | `VITE_GEOAPIFY_API_KEY` |
 | Address search | Géoplateforme geocoding (IGN) | none |
 | Municipality contours | geo.api.gouv.fr | none |
 | Basemaps | Plan IGN (Géoplateforme WMTS), OpenStreetMap tiles | none |

@@ -38,7 +38,7 @@ describe('fetchTransitIsochrone', () => {
       lat: '45.7',
       lon: '4.8',
       type: 'time',
-      mode: 'transit',
+      mode: 'approximated_transit',
       range: '300,600',
       apiKey: 'test-geoapify',
     });

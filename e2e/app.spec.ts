@@ -189,7 +189,7 @@ test('transports en commun : zone calculée à la demande, sans calcul en lot', 
   await page.goto('./');
 
   await page.getByRole('radio', { name: 'Transports en commun' }).check({ force: true });
-  await expect(page.getByText(/la zone est calculée pour l'établissement que vous ouvrez/)).toBeVisible();
+  await expect(page.getByText(/estimation à partir des lignes de bus, tram et métro/)).toBeVisible();
   // Quota partagé : pas de pastille de calcul de toutes les zones visibles
   await expect(page.locator('.map-anchor-bottom')).toHaveCount(0);
 
