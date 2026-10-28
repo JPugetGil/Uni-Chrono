@@ -1,3 +1,5 @@
+import { bandColors } from '../design-system/tokens';
+
 /**
  * Represents a coordinate pair in [latitude, longitude] format
  */
@@ -29,9 +31,10 @@ export interface Isochrone {
   bands?: IsochroneBand[];
 
   /**
-   * Color to display the isochrone on the map
+   * Couleur d'identité (zones comparées) ; une zone mise en avant suit les
+   * couleurs de ses bandes de temps (bandColor)
    */
-  color: string;
+  color?: string;
 
   /**
    * Identifiant pour relier l'isochrone à un établissement (UAI ou fallback)
@@ -56,11 +59,14 @@ export const bandMinutes = (total: number): number[] => {
 };
 
 /**
- * Opacité de remplissage par bande : les bandes se superposent, l'opacité
- * perçue croît donc vers le centre. `bandOpacity` donne l'opacité perçue
- * d'une bande (index 0 = la plus proche) pour la légende.
+ * Opacité de remplissage des bandes, dessinées en anneaux sans recouvrement :
+ * chaque bande garde sa couleur, le fond de carte reste lisible dessous.
  */
-export const BAND_FILL_OPACITY = 0.14;
+export const BAND_FILL_OPACITY = 0.45;
 
-export const bandOpacity = (index: number, count: number): number =>
-  1 - Math.pow(1 - BAND_FILL_OPACITY, count - index);
+/**
+ * Couleurs d'une bande (index 0 = la plus proche) parmi `count` : la plus
+ * proche en violet, la plus lointaine en jaune, la sarcelle entre les deux.
+ */
+export const bandColor = (index: number, count: number): { fill: string; line: string } =>
+  bandColors[count <= 1 ? 0 : Math.round((index * (bandColors.length - 1)) / (count - 1))];

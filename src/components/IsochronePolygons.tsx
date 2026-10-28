@@ -1,5 +1,6 @@
 import { Polygon } from 'react-leaflet';
-import { BAND_FILL_OPACITY, Isochrone } from '../types/isochrone';
+import { BAND_FILL_OPACITY, Coordinate, Isochrone, bandColor } from '../types/isochrone';
+import { isMultiPolygon } from '../utils/geo';
 
 interface IsochronePolygonsProps {
   /** Établissement sélectionné : seule sa zone est montrée (rien pendant le calcul) */
@@ -11,39 +12,42 @@ interface IsochronePolygonsProps {
   compareZones?: Isochrone[];
 }
 
-/** Isochrone mise en avant : bandes de temps superposées, la plus lointaine en trait plein */
+const ringsOf = (coordinates: Coordinate[] | Coordinate[][]): Coordinate[][] =>
+  isMultiPolygon(coordinates) ? coordinates : [coordinates];
+
+/**
+ * Isochrone mise en avant : une couleur par bande de temps (bandColors). Chaque
+ * bande est un anneau, privé de la bande précédente par la règle pair-impair :
+ * les couleurs ne se mélangent pas. Contours par-dessus, le plus lointain épais.
+ */
 const FocusedIsochrone: React.FC<{ isochrone: Isochrone }> = ({ isochrone }) => {
-  const bands = isochrone.bands && isochrone.bands.length > 1 ? isochrone.bands : null;
-  if (!bands) {
-    return (
-      <Polygon
-        positions={isochrone.coordinates}
-        interactive={false}
-        pathOptions={{ color: isochrone.color, weight: 4, opacity: 1, fillColor: isochrone.color, fillOpacity: 0.3 }}
-      />
-    );
-  }
-  // De la plus lointaine à la plus proche : les remplissages s'additionnent vers le centre
+  const bands = isochrone.bands?.length ? isochrone.bands : [{ minutes: 0, coordinates: isochrone.coordinates }];
+  const last = bands.length - 1;
   return (
     <>
-      {[...bands].reverse().map((band, i) => {
-        const outer = i === 0;
-        return (
+      {bands.map((band, i) => (
+        <Polygon
+          key={`fill-${band.minutes}`}
+          positions={[...ringsOf(band.coordinates), ...(i > 0 ? ringsOf(bands[i - 1].coordinates) : [])]}
+          interactive={false}
+          pathOptions={{
+            stroke: false,
+            fillColor: bandColor(i, bands.length).fill,
+            fillOpacity: BAND_FILL_OPACITY,
+            fillRule: 'evenodd',
+          }}
+        />
+      ))}
+      {bands
+        .map((band, i) => (
           <Polygon
-            key={`${isochrone.etablissementId}-${band.minutes}`}
-            positions={band.coordinates}
+            key={`line-${band.minutes}`}
+            positions={ringsOf(band.coordinates)}
             interactive={false}
-            pathOptions={{
-              color: isochrone.color,
-              weight: outer ? 3 : 1.5,
-              opacity: outer ? 1 : 0.85,
-              dashArray: outer ? undefined : '5 5',
-              fillColor: isochrone.color,
-              fillOpacity: BAND_FILL_OPACITY,
-            }}
+            pathOptions={{ color: bandColor(i, bands.length).line, weight: i === last ? 3 : 1.5, opacity: 1, fill: false }}
           />
-        );
-      })}
+        ))
+        .reverse()}
     </>
   );
 };

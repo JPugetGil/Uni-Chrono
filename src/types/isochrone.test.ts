@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { BAND_FILL_OPACITY, bandMinutes, bandOpacity } from './isochrone';
+import { bandColor, bandMinutes } from './isochrone';
+import { bandColors } from '../design-system/tokens';
 
 describe('bandMinutes', () => {
   it.each([
@@ -25,10 +26,11 @@ describe('bandMinutes', () => {
   });
 });
 
-describe('bandOpacity', () => {
-  it('reproduit l’empilement des remplissages : la bande la plus proche est la plus opaque', () => {
-    expect(bandOpacity(2, 3)).toBeCloseTo(BAND_FILL_OPACITY);
-    expect(bandOpacity(0, 3)).toBeGreaterThan(bandOpacity(1, 3));
-    expect(bandOpacity(1, 3)).toBeGreaterThan(bandOpacity(2, 3));
+describe('bandColor', () => {
+  it('donne une couleur par bande, de la plus proche (violet) à la plus lointaine (jaune)', () => {
+    expect([0, 1, 2].map((i) => bandColor(i, 3))).toEqual(bandColors);
+    // Deux bandes : les extrêmes, pour qu'elles restent bien distinctes
+    expect([0, 1].map((i) => bandColor(i, 2))).toEqual([bandColors[0], bandColors[2]]);
+    expect(bandColor(0, 1)).toEqual(bandColors[0]);
   });
 });

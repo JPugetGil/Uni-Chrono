@@ -35,7 +35,6 @@ import FavoriteButton from './components/FavoriteButton';
 import CompareView from './components/CompareView';
 import { MAX_FAVORITES, useFavorites } from './hooks/useFavorites';
 import { useZones } from './hooks/useZones';
-import { colors } from './design-system/tokens';
 
 /** Largeur du panneau latéral (bureau) et marge autour */
 const PANEL_WIDTH = 380;
@@ -113,13 +112,12 @@ function App() {
 
   // Zone de l'établissement ouvert, calculée à l'ouverture de sa fiche
   const selectedZone = useZone(selectedEtab?.coordonnees ?? null, timeInMinutes, transportMode, {
-    color: selectedEtab?.color || '#2a78d6',
     etablissementId: selectedEtabId ?? undefined,
   });
 
   // Établissements accessibles depuis le point de départ (adresse, position), sur demande
   const origin = useMemo(() => (place ? { lat: place.lat, lon: place.lon } : null), [place]);
-  const originZone = useZone(origin, timeInMinutes, transportMode, { enabled: originActive, color: colors.origin });
+  const originZone = useZone(origin, timeInMinutes, transportMode, { enabled: originActive });
   const reachable = useMemo(
     () => (originZone.isochrone && origin ? reachableEtablissements(filteredEtablissements, originZone.isochrone, origin) : null),
     [originZone.isochrone, origin, filteredEtablissements]
@@ -330,6 +328,7 @@ function App() {
             error={originZone.error}
             provider={providerName}
             reachable={reachable}
+            bands={originZone.isochrone?.bands?.map((b) => b.minutes)}
             reachableOnly={reachableOnly}
             onReachableOnlyChange={setReachableOnly}
             timeInMinutes={timeInMinutes}
