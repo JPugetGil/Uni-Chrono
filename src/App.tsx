@@ -27,6 +27,9 @@ import { Place } from './geocodingFetcher';
 import { Etablissement } from './types/etablissement';
 import { Filters, etabId, matchesFilters } from './utils/filters';
 import { boundsOf } from './utils/geo';
+import { hasMapboxKey } from './mapboxFetcher';
+import { hasTransitKey } from './geoapifyFetcher';
+import { IsochroneErrorKind } from './isochroneError';
 
 /** Largeur du panneau latéral (bureau) et marge autour */
 const PANEL_WIDTH = 380;
@@ -69,7 +72,7 @@ function App() {
     [etablissements, filters]
   );
 
-  // Mode transit (Navitia) : isochrone calculée à la demande pour la sélection
+  // Mode transit (Geoapify) : isochrone calculée à la demande pour la sélection
   const isTransit = transportMode === 'transit';
   const selectedEtab = useMemo(
     () => (selectedEtabId ? etablissements?.find((e) => etabId(e) === selectedEtabId) ?? null : null),
@@ -81,20 +84,27 @@ function App() {
     [isTransit, transit.isochrone, isochrones]
   );
 
+  // Clé du service d'isochrones du mode choisi présente au build
+  const zonesConfigured = isTransit ? hasTransitKey : hasMapboxKey;
+
   // La sélection d'un établissement déclenche le calcul de son isochrone si absente
   useEffect(() => {
-    if (selectedEtab && !isTransit) requestIsochrones([selectedEtab]);
+    if (selectedEtab && !isTransit && hasMapboxKey) requestIsochrones([selectedEtab]);
   }, [selectedEtab, isTransit, requestIsochrones]);
 
   const selectedIsochrone = selectedEtabId
     ? displayedIsochrones.find((iso) => iso.etablissementId === selectedEtabId) ?? null
     : null;
+  const selectedRequest = selectedEtabId ? statusById[selectedEtabId] : undefined;
+  const zoneError: IsochroneErrorKind | null = !zonesConfigured
+    ? 'unconfigured'
+    : isTransit
+      ? transit.error
+      : selectedRequest && selectedRequest !== 'pending'
+        ? selectedRequest
+        : null;
   const zoneStatus: ZoneStatus =
-    selectedIsochrone && selectedIsochrone.coordinates.length > 0
-      ? 'ready'
-      : selectedIsochrone || (isTransit ? transit.failed : selectedEtabId && statusById[selectedEtabId] === 'error')
-        ? 'error'
-        : 'pending';
+    selectedIsochrone && selectedIsochrone.coordinates.length > 0 ? 'ready' : zoneError ? 'error' : 'pending';
 
   const selectEtab = useCallback(
     (id: string | null) => {
@@ -209,7 +219,9 @@ function App() {
       etablissement={selectedEtab}
       isochrone={selectedIsochrone}
       zoneStatus={zoneStatus}
-      onRetryZone={isTransit ? undefined : () => requestIsochrones([selectedEtab])}
+      zoneError={zoneError}
+      zoneProvider={isTransit ? 'Geoapify' : 'Mapbox'}
+      onRetryZone={isTransit || !zonesConfigured ? undefined : () => requestIsochrones([selectedEtab])}
       transportMode={transportMode}
       timeInMinutes={timeInMinutes}
       onClose={() => selectEtab(null)}
@@ -246,7 +258,10 @@ function App() {
         onHoverEtab={setHoveredEtabId}
         onSelectEtab={selectEtab}
         // Volet plein écran (mobile) : la pastille de calcul n'aurait plus de place
-        onRequestIsochrones={isTransit || (isMobile && sheetSnap === 'full') ? undefined : requestIsochrones}
+        // Pas de calcul en lot en transports (quota partagé), ni sans clé, ni volet plein écran (mobile)
+        onRequestIsochrones={
+          isTransit || !hasMapboxKey || (isMobile && sheetSnap === 'full') ? undefined : requestIsochrones
+        }
         isochronesPending={pendingCount}
         isochronesBatchTotal={batchTotal}
         isochronesBatchFailed={batchFailed}

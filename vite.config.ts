@@ -61,10 +61,10 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/api\.navitia\.io\/.*/i,
+            urlPattern: /^https:\/\/api\.geoapify\.com\/.*/i,
             handler: 'NetworkFirst',
             options: {
-              cacheName: 'navitia-api',
+              cacheName: 'geoapify-api',
               expiration: {
                 maxEntries: 40,
                 maxAgeSeconds: 60 * 60

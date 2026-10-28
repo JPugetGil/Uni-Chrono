@@ -9,6 +9,7 @@ import { useHousing } from '../hooks/useHousing';
 import { medianRent } from '../utils/housing';
 import { CategoryDot } from './Legend';
 import ZoneSummary, { ZoneStatus } from './ZoneSummary';
+import { IsochroneErrorKind } from '../isochroneError';
 import HousingList from './HousingList';
 import FormationsList from './FormationsList';
 
@@ -16,6 +17,10 @@ interface EtablissementDetailsProps {
   etablissement: Etablissement;
   isochrone?: Isochrone | null;
   zoneStatus: ZoneStatus;
+  /** Cause de l'échec du calcul de la zone */
+  zoneError?: IsochroneErrorKind | null;
+  /** Service d'isochrones du mode choisi (messages d'erreur) */
+  zoneProvider: string;
   onRetryZone?: () => void;
   transportMode: TransportMode;
   timeInMinutes: number;
@@ -42,6 +47,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   etablissement,
   isochrone,
   zoneStatus,
+  zoneError,
+  zoneProvider,
   onRetryZone,
   transportMode,
   timeInMinutes,
@@ -90,6 +97,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
 
       <ZoneSummary
         status={zoneStatus}
+        error={zoneError}
+        provider={zoneProvider}
         isochrone={isochrone}
         transportMode={transportMode}
         timeInMinutes={timeInMinutes}

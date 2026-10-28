@@ -183,3 +183,30 @@ test('le filtre de statut et les sources des données', async ({ page }) => {
   await expect(page.getByRole('link', { name: 'Carte des loyers 2025' })).toBeVisible();
   await expect(page.getByText('Données préparées le 26 octobre 2026')).toBeVisible();
 });
+
+test('transports en commun : zone calculée à la demande, sans calcul en lot', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page);
+  await page.goto('./');
+
+  await page.getByRole('radio', { name: 'Transports en commun' }).check({ force: true });
+  await expect(page.getByText(/la zone est calculée pour l'établissement que vous ouvrez/)).toBeVisible();
+  // Quota partagé : pas de pastille de calcul de toutes les zones visibles
+  await expect(page.locator('.map-anchor-bottom')).toHaveCount(0);
+
+  await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
+  const zone = page.getByRole('region', { name: 'En 15 min en transports en commun' });
+  await expect(zone.getByRole('list', { name: 'Temps de trajet' }).getByRole('listitem')).toHaveText(['≤ 5 min', '≤ 10 min', '≤ 15 min']);
+  expect(isochroneCalls).toEqual([{ profile: 'transit', minutes: [5, 10, 15] }]);
+});
+
+test('explique une clé Mapbox refusée au lieu d’échouer en silence', async ({ page }) => {
+  const { isochroneCalls } = await mockApis(page, { mapboxStatus: 401 });
+  await page.goto('./');
+
+  await searchAndPick(page, 'ecole normale', /ECOLE NORMALE SUPERIEURE DE LYON/);
+  await expect(page.getByRole('region', { name: 'En 15 min à pied' })).toContainText('La clé Mapbox a été refusée');
+  // Pas de nouvelle tentative proposée ni effectuée pour une clé refusée
+  await expect(page.getByRole('button', { name: 'Réessayer' })).toHaveCount(0);
+  await page.waitForTimeout(1500);
+  expect(isochroneCalls).toEqual([{ profile: 'walking', minutes: [5, 10, 15] }]);
+});

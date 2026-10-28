@@ -1,6 +1,6 @@
 /**
  * Modes de transport supportés.
- * 'transit' (transports en commun) est fourni par Navitia, les autres par Mapbox.
+ * 'transit' (transports en commun) est fourni par Geoapify, les autres par Mapbox.
  */
 export type TransportMode = 'walking' | 'cycling' | 'driving' | 'transit';
 

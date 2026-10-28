@@ -58,7 +58,7 @@
         "by_walking": "à pied",
         "by_cycling": "à vélo",
         "by_transit": "en transports en commun",
-        "transitHint": "Transports en commun : cliquez sur un établissement pour calculer sa zone (Navitia)."
+        "transitHint": "Transports en commun : la zone est calculée pour l'établissement que vous ouvrez (Geoapify, sans horaire de départ précis)."
     },
     "filters": {
         "title": "Filtres",
@@ -103,7 +103,6 @@
         "title": "Zone accessible",
         "headline": "En {{time}} min {{mode}}",
         "computing": "Calcul de la zone…",
-        "error": "Zone indisponible pour le moment",
         "retry": "Réessayer",
         "bands": "Temps de trajet",
         "bandLabel": "≤ {{time}} min",
@@ -112,7 +111,13 @@
         "communes": "Communes",
         "medianRent": "Loyer médian",
         "rentValue": "{{value}} €/m²",
-        "monthlyFor": "≈ {{amount}}/mois pour {{surface}} m²"
+        "monthlyFor": "≈ {{amount}}/mois pour {{surface}} m²",
+        "errors": {
+            "unconfigured": "Calcul des zones indisponible : aucune clé {{provider}} n'est configurée.",
+            "auth": "La clé {{provider}} a été refusée : calcul des zones impossible.",
+            "quota": "Trop de demandes envoyées à {{provider}} : réessayez dans un moment.",
+            "failed": "Zone indisponible pour le moment"
+        }
     },
     "housing": {
         "title": "Se loger dans la zone",
@@ -174,6 +179,7 @@
         "communesDetail": "geo.api.gouv.fr (IGN, Insee)",
         "isochrones": "Temps de trajet",
         "geocoding": "Adresses",
-        "generatedAt": "Données préparées le {{date}}"
+        "generatedAt": "Données préparées le {{date}}",
+        "isochronesDetail": "Mapbox ; transports en commun : Geoapify"
     }
 }
