@@ -3,7 +3,11 @@ import { IsochroneError, httpError } from './isochroneError';
 
 /**
  * Isochrones en transports en commun via l'API Isoline de Geoapify
- * (https://apidocs.geoapify.com/docs/isolines/, mode « transit »).
+ * (https://apidocs.geoapify.com/docs/isolines/), mode « approximated_transit » :
+ * estimation à partir des lignes de transport d'OpenStreetMap, sans horaires.
+ * Le mode « transit » ne suit pas les réseaux français : mesuré le 28/10/2026
+ * à 30 min depuis l'INSA Lyon, 7,0 km² contre 9,5 km² à pied (Mapbox) et
+ * 35 km² en « approximated_transit », zone qui suit métro et tramways.
  * Offre gratuite : 3 000 crédits par jour, partagés par tous les visiteurs
  * (la clé est publique) : le calcul est fait pour l'établissement
  * sélectionné uniquement. L'option n'est proposée que si
@@ -70,7 +74,7 @@ export const fetchTransitIsochrone = async (
 
   const minutes = [...new Set(contoursMinutes.map((m) => Math.min(60, Math.max(1, Math.round(m)))))].sort((a, b) => a - b);
   let { status, body } = await request(
-    { lat: String(lat), lon: String(lon), type: 'time', mode: 'transit', range: minutes.map((m) => m * 60).join(',') },
+    { lat: String(lat), lon: String(lon), type: 'time', mode: 'approximated_transit', range: minutes.map((m) => m * 60).join(',') },
     signal
   );
 

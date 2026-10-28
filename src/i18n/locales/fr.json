@@ -60,7 +60,7 @@
         "by_walking": "à pied",
         "by_cycling": "à vélo",
         "by_transit": "en transports en commun",
-        "transitHint": "Transports en commun : la zone est calculée pour l'établissement que vous ouvrez (Geoapify, sans horaire de départ précis)."
+        "transitHint": "Transports en commun : estimation à partir des lignes de bus, tram et métro (Geoapify, sans horaires). La zone est calculée pour l'établissement que vous ouvrez."
     },
     "filters": {
         "title": "Filtres",

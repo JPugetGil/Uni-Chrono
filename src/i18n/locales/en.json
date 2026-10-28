@@ -60,7 +60,7 @@
         "by_walking": "on foot",
         "by_cycling": "by bike",
         "by_transit": "by public transport",
-        "transitHint": "Public transport: the area is computed for the institution you open (Geoapify, no specific departure time)."
+        "transitHint": "Public transport: an estimate from bus, tram and metro lines (Geoapify, without timetables). The area is computed for the institution you open."
     },
     "filters": {
         "title": "Filters",
