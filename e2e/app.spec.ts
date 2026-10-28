@@ -288,25 +288,27 @@ test('calques CROUS et résidences CROUS dans la zone de l’établissement', as
 
 test('fond de carte Plan IGN par défaut, OpenStreetMap au choix', async ({ page }) => {
   await mockApis(page);
-  const tiles: string[] = [];
-  page.on('request', (r) => tiles.push(new URL(r.url()).hostname));
+  // Hôtes des requêtes (comparaison exacte, pas de recherche dans l'URL)
+  const hosts = new Set<string>();
+  page.on('request', (r) => hosts.add(new URL(r.url()).hostname));
   await page.goto('./');
-  await expect.poll(() => tiles.includes('data.geopf.fr')).toBe(true);
+  await expect.poll(() => hosts.has('data.geopf.fr')).toBe(true);
 
   await page.getByRole('button', { name: 'Fond de carte et calques' }).click();
   await page.getByRole('radio', { name: 'OpenStreetMap' }).check();
-  await expect.poll(() => tiles.includes('tile.openstreetmap.org')).toBe(true);
+  await expect.poll(() => hosts.has('tile.openstreetmap.org')).toBe(true);
 });
 
 test('Plan IGN en échec : repli sur OpenStreetMap signalé, sans changer le fond enregistré', async ({ page }) => {
   await mockApis(page, { ignTilesStatus: 404 });
-  const tiles: string[] = [];
-  page.on('request', (r) => tiles.push(new URL(r.url()).hostname));
+  // Hôtes des requêtes (comparaison exacte, pas de recherche dans l'URL)
+  const hosts = new Set<string>();
+  page.on('request', (r) => hosts.add(new URL(r.url()).hostname));
   await page.goto('./');
 
   const notice = page.getByRole('status').filter({ hasText: 'Plan IGN indisponible ici : fond OpenStreetMap affiché' });
   await expect(notice).toBeVisible();
-  await expect.poll(() => tiles.includes('tile.openstreetmap.org')).toBe(true);
+  await expect.poll(() => hosts.has('tile.openstreetmap.org')).toBe(true);
   await page.getByRole('button', { name: 'Fond de carte et calques' }).click();
   await expect(page.getByRole('radio', { name: 'OpenStreetMap' })).toBeChecked();
   // Le Plan IGN reste le fond préféré : il reviendra à la prochaine visite
