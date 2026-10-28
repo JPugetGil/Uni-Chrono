@@ -17,7 +17,7 @@ export const colors = {
  */
 export const categoryColors: Record<EtablissementCategory, string> = {
   university: '#2a78d6',
-  grand: '#eb6834',
-  school: '#1baf7a',
+  school: '#eb6834',
+  lycee: '#1baf7a',
   other: '#898781',
 };

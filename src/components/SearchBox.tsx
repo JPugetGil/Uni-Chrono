@@ -1,7 +1,7 @@
 import { useId, useMemo, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Building2, ListFilter, LoaderCircle, MapPin, Search, X } from 'lucide-react';
-import { Etablissement, getEtablissementName } from '../types/etablissement';
+import { Etablissement } from '../types/etablissement';
 import { Place } from '../geocodingFetcher';
 import { useGeocoder } from '../hooks/useGeocoder';
 import { etabId, matchesFilters } from '../utils/filters';
@@ -46,14 +46,14 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
 
   const index = useMemo(() => {
     const etabs = (etablissements ?? []).map((e) => {
-      const name = getEtablissementName(e);
-      return { etab: e, name, normalizedName: normalizeText(name), key: normalizeText(`${name} ${e.siege_lib ?? ''}`) };
+      const key = normalizeText(e.nom);
+      return { etab: e, name: e.nom, normalizedName: key, key };
     });
     const cities = new Map<string, { name: string; dep?: string | null; key: string; etabs: Etablissement[] }>();
     for (const e of etablissements ?? []) {
-      if (!e.com_nom) continue;
-      const cityKey = `${e.com_nom}|${e.dep_nom ?? ''}`;
-      const city = cities.get(cityKey) ?? { name: e.com_nom, dep: e.dep_nom, key: normalizeText(e.com_nom), etabs: [] };
+      if (!e.commune) continue;
+      const cityKey = `${e.commune}|${e.departement}`;
+      const city = cities.get(cityKey) ?? { name: e.commune, dep: e.departement, key: normalizeText(e.commune), etabs: [] };
       city.etabs.push(e);
       cities.set(cityKey, city);
     }
@@ -208,7 +208,10 @@ const SearchBox: React.FC<SearchBoxProps> = ({ etablissements, onSelectEtab, onS
                   <CategoryDot color={s.etab.color || '#898781'} />
                   <span className="min-w-0 flex-1">
                     <span className="block truncate">{s.name}</span>
-                    {s.etab.com_nom && <span className="block truncate text-xs text-slate-500">{s.etab.com_nom}</span>}
+                    {/* Commune et formations : distinguent les sites d'un même établissement */}
+                    <span className="block truncate text-xs text-slate-500">
+                      {[s.etab.commune, s.etab.types.slice(0, 2).join(', ')].filter(Boolean).join(' · ')}
+                    </span>
                   </span>
                 </>
               )}

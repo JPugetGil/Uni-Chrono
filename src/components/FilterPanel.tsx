@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { RotateCcw } from 'lucide-react';
 import Select from '../design-system/Select';
 import Button from '../design-system/Button';
-import { Etablissement, getEtablissementTypes } from '../types/etablissement';
+import { Etablissement, STATUTS, Statut } from '../types/etablissement';
 import { Filters, countActiveFilters, matchesFilters } from '../utils/filters';
 
 interface FilterPanelProps {
@@ -56,37 +56,38 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ etablissements, values, onCha
   const etabs = useMemo(() => etablissements ?? [], [etablissements]);
   const disabled = !etablissements;
 
-  const types = useMemo(() => optionsFor(etabs, values, 'type', ['type'], getEtablissementTypes), [etabs, values]);
+  const types = useMemo(() => optionsFor(etabs, values, 'type', ['type'], (e) => e.types), [etabs, values]);
+  const statuts = useMemo(() => optionsFor(etabs, values, 'statut', ['statut'], (e) => [e.statut]), [etabs, values]);
   const regions = useMemo(
-    () => optionsFor(etabs, values, 'region', ['region', 'departement', 'commune'], (e) => [e.reg_nom]),
+    () => optionsFor(etabs, values, 'region', ['region', 'departement', 'commune'], (e) => [e.region]),
     [etabs, values]
   );
   const deps = useMemo(
-    () => optionsFor(etabs, values, 'departement', ['departement', 'commune'], (e) => [e.dep_nom]),
+    () => optionsFor(etabs, values, 'departement', ['departement', 'commune'], (e) => [e.departement]),
     [etabs, values]
   );
-  const communes = useMemo(() => optionsFor(etabs, values, 'commune', ['commune'], (e) => [e.com_nom]), [etabs, values]);
+  const communes = useMemo(() => optionsFor(etabs, values, 'commune', ['commune'], (e) => [e.commune]), [etabs, values]);
 
   // Région : on retire département et ville qui n'y appartiennent pas
   const setRegion = (region?: string) => {
     const inRegion = (pick: (e: Etablissement) => string | null | undefined, v?: string) =>
-      !region || !v || etabs.some((e) => e.reg_nom === region && pick(e) === v);
+      !region || !v || etabs.some((e) => e.region === region && pick(e) === v);
     onChange({
       ...values,
       region,
-      departement: inRegion((e) => e.dep_nom, values.departement) ? values.departement : undefined,
-      commune: inRegion((e) => e.com_nom, values.commune) ? values.commune : undefined,
+      departement: inRegion((e) => e.departement, values.departement) ? values.departement : undefined,
+      commune: inRegion((e) => e.commune, values.commune) ? values.commune : undefined,
     });
   };
 
   // Département : on complète la région et on retire la ville hors département
   const setDepartement = (departement?: string) => {
-    const inDep = etabs.filter((e) => e.dep_nom === departement);
-    const keepCommune = !departement || !values.commune || inDep.some((e) => e.com_nom === values.commune);
+    const inDep = etabs.filter((e) => e.departement === departement);
+    const keepCommune = !departement || !values.commune || inDep.some((e) => e.commune === values.commune);
     onChange({
       ...values,
       departement,
-      region: departement ? uniqueValue(inDep, (e) => e.reg_nom) ?? values.region : values.region,
+      region: departement ? uniqueValue(inDep, (e) => e.region) ?? values.region : values.region,
       commune: keepCommune ? values.commune : undefined,
     });
   };
@@ -94,13 +95,13 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ etablissements, values, onCha
   // Ville : on complète département et région quand le nom est sans ambiguïté
   const setCommune = (commune?: string) => {
     const inCommune = etabs.filter(
-      (e) => e.com_nom === commune && (!values.departement || e.dep_nom === values.departement)
+      (e) => e.commune === commune && (!values.departement || e.departement === values.departement)
     );
     onChange({
       ...values,
       commune,
-      departement: commune ? uniqueValue(inCommune, (e) => e.dep_nom) ?? values.departement : values.departement,
-      region: commune ? uniqueValue(inCommune, (e) => e.reg_nom) ?? values.region : values.region,
+      departement: commune ? uniqueValue(inCommune, (e) => e.departement) ?? values.departement : values.departement,
+      region: commune ? uniqueValue(inCommune, (e) => e.region) ?? values.region : values.region,
     });
   };
 
@@ -152,6 +153,23 @@ const FilterPanel: React.FC<FilterPanelProps> = ({ etablissements, values, onCha
       >
         <option value="">{t('filters.all')}</option>
         {renderOptions(types)}
+      </Select>
+      <Select
+        label={t('filters.statut')}
+        value={values.statut || ''}
+        onChange={(e) => onChange({ ...values, statut: (e.target.value || undefined) as Statut | undefined })}
+        disabled={disabled}
+        className="col-span-2"
+      >
+        <option value="">{t('filters.all')}</option>
+        {STATUTS.map((statut) => (
+          <option key={statut} value={statut}>
+            {t('filters.option', {
+              label: t(`statut.${statut}`),
+              count: statuts.find((o) => o.value === statut)?.count ?? 0,
+            })}
+          </option>
+        ))}
       </Select>
       {active > 0 && onReset && (
         <Button variant="ghost" size="sm" onClick={onReset} className="col-span-2 justify-self-start">

@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Etablissement, ETABLISSEMENT_CATEGORIES, getEtablissementCategory } from '../types/etablissement';
+import { Etablissement, ETABLISSEMENT_CATEGORIES } from '../types/etablissement';
 import { categoryColors, colors } from '../design-system/tokens';
 import { useFormatters } from '../i18n/useFormatters';
 
@@ -25,8 +25,7 @@ const Legend: React.FC<LegendProps> = ({ etablissements }) => {
   const counts = useMemo(() => {
     const c = new Map<string, number>();
     for (const e of etablissements) {
-      const category = getEtablissementCategory(e);
-      c.set(category, (c.get(category) ?? 0) + 1);
+      c.set(e.category, (c.get(e.category) ?? 0) + 1);
     }
     return c;
   }, [etablissements]);

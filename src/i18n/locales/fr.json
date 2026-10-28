@@ -62,7 +62,7 @@
     },
     "filters": {
         "title": "Filtres",
-        "type": "Type",
+        "type": "Type de formation",
         "all": "Tous",
         "region": "Région",
         "allFeminine": "Toutes",
@@ -70,14 +70,15 @@
         "allMasculine": "Tous",
         "city": "Ville",
         "reset": "Réinitialiser",
-        "option": "{{label}} ({{count}})"
+        "option": "{{label}} ({{count}})",
+        "statut": "Statut"
     },
     "legend": {
-        "title": "Légende",
-        "university": "Université",
-        "grand": "Grand établissement",
-        "school": "École ou institut",
+        "university": "Université ou IUT",
+        "school": "École spécialisée",
+        "lycee": "Lycée ou CFA (BTS, prépa…)",
         "other": "Autre",
+        "title": "Légende",
         "cluster": "Groupe d'établissements : cliquez pour zoomer",
         "zone": "Zones accessibles calculées"
     },
@@ -130,26 +131,49 @@
         "showAll": "Afficher les {{count}} communes",
         "showLess": "Afficher moins",
         "showOnMap": "{{name}} : afficher sur la carte",
-        "source": "Loyers d'annonce 2023 charges comprises, appartements de 1 ou 2 pièces (Carte des loyers, ANIL). Estimation indicative : loyer au m² × surface."
+        "source": "Loyers d'annonce {{year}} charges comprises, appartements de 1 ou 2 pièces (Carte des loyers, ANIL). Estimation indicative : loyer au m² × surface."
     },
     "details": {
         "close": "Fermer la fiche",
         "back": "Retour",
         "sheet": "Fiche de l'établissement",
         "uai": "UAI",
-        "headquarters": "Siège",
-        "implantation": "Implantation",
-        "type": "Type",
         "region": "Région",
         "department": "Département",
         "city": "Commune",
-        "services": "Services",
-        "openingDate": "Date d'ouverture",
-        "coordinates": "Coordonnées"
+        "coordinates": "Coordonnées",
+        "statut": "Statut",
+        "types": "Formations",
+        "website": "Site web"
     },
     "error": {
         "title": "Une erreur est survenue",
         "description": "L'application a rencontré un problème inattendu. Recharger la page devrait suffire.",
         "reload": "Recharger la page"
+    },
+    "statut": {
+        "public": "Public",
+        "prive-contrat": "Privé sous contrat",
+        "prive": "Privé"
+    },
+    "formations": {
+        "title_one": "{{count}} formation sur Parcoursup",
+        "title_other": "{{count}} formations sur Parcoursup",
+        "loading": "Chargement des formations…",
+        "error": "Formations indisponibles",
+        "apprenticeship": "en apprentissage",
+        "fiche": "Fiche Parcoursup"
+    },
+    "sources": {
+        "title": "Sources des données",
+        "parcoursup": "Formations Parcoursup {{year}}",
+        "parcoursupDetail": "ministère de l'Enseignement supérieur, Licence Ouverte, mis à jour le {{date}}",
+        "rents": "Carte des loyers {{year}}",
+        "rentsDetail": "ANIL, data.gouv.fr, Licence Ouverte",
+        "communes": "Communes",
+        "communesDetail": "geo.api.gouv.fr (IGN, Insee)",
+        "isochrones": "Temps de trajet",
+        "geocoding": "Adresses",
+        "generatedAt": "Données préparées le {{date}}"
     }
 }

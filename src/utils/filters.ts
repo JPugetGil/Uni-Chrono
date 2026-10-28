@@ -1,8 +1,10 @@
-import { Etablissement, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
+import { Etablissement, Statut } from '../types/etablissement';
 import { matchesAllWords, normalizeText } from './text';
 
 export type Filters = {
+  /** Type de formation proposé (BTS, Licence…) */
   type?: string;
+  statut?: Statut;
   region?: string;
   departement?: string;
   commune?: string;
@@ -10,17 +12,18 @@ export type Filters = {
   name?: string;
 };
 
-/** Identifiant stable d'un établissement : UAI, ou coordonnées à défaut */
-export const etabId = (e: Etablissement): string => e.uai || `${e.coordonnees.lat},${e.coordonnees.lon}`;
+/** Identifiant stable d'un site d'enseignement */
+export const etabId = (e: Etablissement): string => e.id;
 
 /** Test d'un établissement contre les filtres */
 export const matchesFilters = (e: Etablissement, filters: Filters): boolean => {
-  if (filters.type && !getEtablissementTypes(e).includes(filters.type)) return false;
-  if (filters.region && e.reg_nom !== filters.region) return false;
-  if (filters.departement && e.dep_nom !== filters.departement) return false;
-  if (filters.commune && e.com_nom !== filters.commune) return false;
+  if (filters.type && !e.types.includes(filters.type)) return false;
+  if (filters.statut && e.statut !== filters.statut) return false;
+  if (filters.region && e.region !== filters.region) return false;
+  if (filters.departement && e.departement !== filters.departement) return false;
+  if (filters.commune && e.commune !== filters.commune) return false;
   if (filters.name) {
-    if (!matchesAllWords(normalizeText(getEtablissementName(e)), normalizeText(filters.name))) return false;
+    if (!matchesAllWords(normalizeText(e.nom), normalizeText(filters.name))) return false;
   }
   return true;
 };

@@ -8,6 +8,7 @@ import LanguageSwitcher from './LanguageSwitcher';
 import Onboarding from './Onboarding';
 import FilterPanel from './FilterPanel';
 import Legend from './Legend';
+import DataSources from './DataSources';
 
 interface ExplorePanelProps {
   /** Mobile : la marque et la langue sont dans le volet (pas d'en-tête de panneau) */
@@ -82,6 +83,8 @@ const ExplorePanel: React.FC<ExplorePanelProps> = ({
         </h2>
         <Legend etablissements={filteredEtablissements} />
       </section>
+
+      <DataSources />
     </div>
   );
 };

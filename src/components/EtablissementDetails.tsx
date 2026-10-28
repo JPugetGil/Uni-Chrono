@@ -1,16 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowLeft, ChevronDown } from 'lucide-react';
+import { ArrowLeft, ChevronDown, ExternalLink } from 'lucide-react';
 import IconButton from '../design-system/IconButton';
-import { Etablissement, getEtablissementCategory, getEtablissementName, getEtablissementTypes } from '../types/etablissement';
+import { Etablissement } from '../types/etablissement';
 import { Isochrone } from '../types/isochrone';
 import { TransportMode } from '../types/transport';
 import { useHousing } from '../hooks/useHousing';
 import { medianRent } from '../utils/housing';
-import { useFormatters } from '../i18n/useFormatters';
 import { CategoryDot } from './Legend';
 import ZoneSummary, { ZoneStatus } from './ZoneSummary';
 import HousingList from './HousingList';
+import FormationsList from './FormationsList';
 
 interface EtablissementDetailsProps {
   etablissement: Etablissement;
@@ -52,18 +52,7 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   travelSettings,
 }) => {
   const { t } = useTranslation();
-  const fmt = useFormatters();
-  const { uai, siege_lib, implantation_lib, reg_nom, dep_nom, com_nom, coordonnees, color, services, date_ouverture } = etablissement;
-  const displayName = getEtablissementName(etablissement);
-  const category = getEtablissementCategory(etablissement);
-  const types = getEtablissementTypes(etablissement);
-  const normalizedSiege = siege_lib ? siege_lib.replace(/\s+/g, ' ').trim() : undefined;
-  const normalizedImplantation = implantation_lib ? implantation_lib.replace(/\s+/g, ' ').trim() : undefined;
-  const openingDateValue = (() => {
-    if (!date_ouverture) return undefined;
-    const parsed = new Date(date_ouverture);
-    return Number.isNaN(parsed.getTime()) ? date_ouverture : fmt.date(parsed);
-  })();
+  const { id, uai, nom, region, departement, commune, coordonnees, color, category, statut, types, url } = etablissement;
 
   const housing = useHousing(zoneStatus === 'ready' && isochrone ? isochrone : undefined);
   const [surface, setSurface] = useState(20);
@@ -72,7 +61,7 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
   const titleRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => {
     titleRef.current?.focus({ preventScroll: true });
-  }, [uai]);
+  }, [id]);
 
   return (
     <article aria-labelledby="etab-title" className="flex flex-col gap-4">
@@ -83,7 +72,7 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
         <div className="min-w-0 flex-1 pt-1">
           <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
             <CategoryDot color={color || '#898781'} className="size-3" />
-            {t(`legend.${category}`)}
+            {t(`legend.${category}`)} · {t(`statut.${statut}`)}
           </p>
           <h2
             id="etab-title"
@@ -91,11 +80,9 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
             tabIndex={-1}
             className="mt-1 text-lg leading-snug font-semibold break-words text-slate-900 outline-none"
           >
-            {displayName}
+            {nom}
           </h2>
-          {(com_nom || dep_nom) && (
-            <p className="mt-0.5 text-sm text-slate-600">{[com_nom, dep_nom].filter(Boolean).join(' · ')}</p>
-          )}
+          <p className="mt-0.5 text-sm text-slate-600">{[commune, departement].filter(Boolean).join(' · ')}</p>
         </div>
       </header>
 
@@ -123,6 +110,8 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
         onHoverCommune={onHoverCommune}
       />
 
+      <FormationsList etablissement={etablissement} />
+
       <details className="group rounded-xl ring-1 ring-slate-200">
         <summary className="flex cursor-pointer list-none items-center justify-between rounded-xl px-3 py-2.5 text-sm font-semibold text-slate-900 hover:bg-slate-50 [&::-webkit-details-marker]:hidden">
           {t('details.sheet')}
@@ -130,16 +119,27 @@ const EtablissementDetails: React.FC<EtablissementDetailsProps> = ({
         </summary>
         <dl className="divide-y divide-slate-100 border-t border-slate-200 px-3 pb-1">
           <Row label={t('details.uai')} value={uai} />
-          {normalizedSiege && <Row label={t('details.headquarters')} value={normalizedSiege} />}
-          {normalizedImplantation && normalizedImplantation !== displayName && (
-            <Row label={t('details.implantation')} value={normalizedImplantation} />
+          <Row label={t('details.statut')} value={t(`statut.${statut}`)} />
+          <Row label={t('details.types')} value={types.join(', ')} />
+          <Row label={t('details.region')} value={region} />
+          <Row label={t('details.department')} value={departement} />
+          <Row label={t('details.city')} value={commune} />
+          {url && (
+            <Row
+              label={t('details.website')}
+              value={
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 font-medium break-all text-blue-800 hover:underline"
+                >
+                  {url.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}
+                  <ExternalLink aria-hidden className="size-3 shrink-0" />
+                </a>
+              }
+            />
           )}
-          <Row label={t('details.type')} value={types.join(', ')} />
-          <Row label={t('details.region')} value={reg_nom} />
-          <Row label={t('details.department')} value={dep_nom} />
-          <Row label={t('details.city')} value={com_nom} />
-          {services && services.length > 0 && <Row label={t('details.services')} value={services.join(', ')} />}
-          {openingDateValue && <Row label={t('details.openingDate')} value={openingDateValue} />}
           <Row
             label={t('details.coordinates')}
             value={coordonnees ? `${coordonnees.lat.toFixed(5)}, ${coordonnees.lon.toFixed(5)}` : undefined}

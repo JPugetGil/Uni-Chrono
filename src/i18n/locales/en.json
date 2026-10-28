@@ -62,7 +62,7 @@
     },
     "filters": {
         "title": "Filters",
-        "type": "Type",
+        "type": "Programme type",
         "all": "All",
         "region": "Region",
         "allFeminine": "All",
@@ -70,14 +70,15 @@
         "allMasculine": "All",
         "city": "City",
         "reset": "Reset",
-        "option": "{{label}} ({{count}})"
+        "option": "{{label}} ({{count}})",
+        "statut": "Status"
     },
     "legend": {
-        "title": "Legend",
-        "university": "University",
-        "grand": "Grand établissement",
-        "school": "School or institute",
+        "university": "University or IUT",
+        "school": "Specialised school",
+        "lycee": "High school or CFA (BTS, prépa…)",
         "other": "Other",
+        "title": "Legend",
         "cluster": "Group of institutions: click to zoom in",
         "zone": "Computed reachable areas"
     },
@@ -130,26 +131,49 @@
         "showAll": "Show all {{count}} municipalities",
         "showLess": "Show less",
         "showOnMap": "{{name}}: show on map",
-        "source": "2023 advertised rents including charges, 1–2 room apartments (Carte des loyers, ANIL). Rough estimate: rent per m² × size."
+        "source": "{{year}} advertised rents including charges, 1–2 room apartments (Carte des loyers, ANIL). Rough estimate: rent per m² × size."
     },
     "details": {
         "close": "Close",
         "back": "Back",
         "sheet": "Institution details",
         "uai": "UAI",
-        "headquarters": "Headquarters",
-        "implantation": "Site",
-        "type": "Type",
         "region": "Region",
         "department": "Department",
         "city": "Municipality",
-        "services": "Services",
-        "openingDate": "Opening date",
-        "coordinates": "Coordinates"
+        "coordinates": "Coordinates",
+        "statut": "Status",
+        "types": "Programmes",
+        "website": "Website"
     },
     "error": {
         "title": "Something went wrong",
         "description": "The application ran into an unexpected problem. Reloading the page should fix it.",
         "reload": "Reload the page"
+    },
+    "statut": {
+        "public": "Public",
+        "prive-contrat": "Private under contract",
+        "prive": "Private"
+    },
+    "formations": {
+        "title_one": "{{count}} programme on Parcoursup",
+        "title_other": "{{count}} programmes on Parcoursup",
+        "loading": "Loading programmes…",
+        "error": "Programmes unavailable",
+        "apprenticeship": "apprenticeship",
+        "fiche": "Parcoursup page"
+    },
+    "sources": {
+        "title": "Data sources",
+        "parcoursup": "Parcoursup programmes {{year}}",
+        "parcoursupDetail": "French Ministry of Higher Education, Licence Ouverte, updated {{date}}",
+        "rents": "Carte des loyers {{year}}",
+        "rentsDetail": "ANIL, data.gouv.fr, Licence Ouverte",
+        "communes": "Municipalities",
+        "communesDetail": "geo.api.gouv.fr (IGN, Insee)",
+        "isochrones": "Travel times",
+        "geocoding": "Addresses",
+        "generatedAt": "Data prepared on {{date}}"
     }
 }

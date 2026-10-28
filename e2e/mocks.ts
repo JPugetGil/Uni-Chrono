@@ -5,78 +5,65 @@ import { Page, Route } from '@playwright/test';
  * réseau, ni des quotas, ni de l'évolution des jeux de données.
  */
 
+const site = (
+  uai: string,
+  nom: string,
+  category: string,
+  types: string[],
+  lat: number,
+  lon: number,
+  commune: string,
+  departement: string,
+  region: string,
+  extra: Record<string, unknown> = {}
+) => ({
+  id: uai,
+  uai,
+  nom,
+  coordonnees: { lat, lon },
+  commune,
+  departement,
+  region,
+  statut: 'public',
+  types,
+  category,
+  formations: 2,
+  apprentissage: false,
+  ...extra,
+});
+
 export const ETABLISSEMENTS = [
-  {
-    uai: '0690192J',
-    implantation_lib: 'INSTITUT NATIONAL DES SCIENCES APPLIQUEES DE LYON',
-    siege_lib: 'Institut national des sciences appliquées de Lyon',
-    type_d_etablissement: "Écoles nationales supérieures d'ingénieurs",
-    coordonnees: { lat: 45.7833, lon: 4.8781 },
-    reg_nom: 'Auvergne - Rhône-Alpes',
-    dep_nom: 'Rhône',
-    com_nom: 'Villeurbanne',
-  },
-  {
-    uai: '0690213G',
-    implantation_lib: 'INSTITUT UNIVERSITAIRE DE TECHNOLOGIE LYON 1',
-    siege_lib: 'Université Claude Bernard - Lyon 1',
-    type_d_etablissement: 'Université',
-    coordonnees: { lat: 45.779, lon: 4.8696 },
-    reg_nom: 'Auvergne - Rhône-Alpes',
-    dep_nom: 'Rhône',
-    com_nom: 'Villeurbanne',
-  },
-  {
-    uai: '0694123A',
-    implantation_lib: 'ECOLE NORMALE SUPERIEURE DE LYON',
-    type_d_etablissement: 'École normale supérieure',
-    coordonnees: { lat: 45.73, lon: 4.832 },
-    reg_nom: 'Auvergne - Rhône-Alpes',
-    dep_nom: 'Rhône',
-    com_nom: 'Lyon 7e',
-  },
-  // Deux implantations au même endroit (liste au clic sur le groupe)
-  {
-    uai: '0350937D',
-    implantation_lib: 'UNIVERSITÉ RENNES 2',
-    type_d_etablissement: 'Université',
-    coordonnees: { lat: 48.118, lon: -1.7024 },
-    reg_nom: 'Bretagne',
-    dep_nom: 'Ille-et-Vilaine',
-    com_nom: 'Rennes',
-  },
-  {
-    uai: '0352345A',
-    implantation_lib: 'UFR SCIENCES HUMAINES, UNIVERSITE DE RENNES 2',
-    type_d_etablissement: 'Université',
-    coordonnees: { lat: 48.118, lon: -1.7024 },
-    reg_nom: 'Bretagne',
-    dep_nom: 'Ille-et-Vilaine',
-    com_nom: 'Rennes',
-  },
-  {
-    uai: '0290346U',
-    implantation_lib: 'UNIVERSITE DE BRETAGNE OCCIDENTALE',
-    type_d_etablissement: 'Université',
-    coordonnees: { lat: 48.398, lon: -4.5 },
-    reg_nom: 'Bretagne',
-    dep_nom: 'Finistère',
-    com_nom: 'Brest',
-  },
+  site('0690192J', 'INSTITUT NATIONAL DES SCIENCES APPLIQUEES DE LYON', 'school', ["Formations des écoles d'ingénieurs"], 45.7833, 4.8781, 'Villeurbanne', 'Rhône', 'Auvergne-Rhône-Alpes', { url: 'https://www.insa-lyon.fr/' }),
+  site('0690213G', 'IUT LYON 1', 'university', ['BUT'], 45.779, 4.8696, 'Villeurbanne', 'Rhône', 'Auvergne-Rhône-Alpes'),
+  site('0694123A', 'ECOLE NORMALE SUPERIEURE DE LYON', 'school', ["Formations d'art, de design et du spectacle vivant"], 45.73, 4.832, 'Lyon', 'Rhône', 'Auvergne-Rhône-Alpes', { statut: 'prive-contrat' }),
+  // Deux sites au même endroit (liste au clic sur le groupe)
+  site('0350937D', 'UNIVERSITÉ RENNES 2', 'university', ['Licence'], 48.118, -1.7024, 'Rennes', 'Ille-et-Vilaine', 'Bretagne'),
+  site('0352345A', 'UFR SCIENCES HUMAINES, UNIVERSITE DE RENNES 2', 'university', ['Licence'], 48.118, -1.7024, 'Rennes', 'Ille-et-Vilaine', 'Bretagne'),
+  site('0290346U', 'UNIVERSITE DE BRETAGNE OCCIDENTALE', 'university', ['Licence', 'BUT'], 48.398, -4.5, 'Brest', 'Finistère', 'Bretagne'),
 ];
 
+const FORMATIONS: Record<string, Record<string, unknown[]>> = {
+  '069': {
+    '0690192J': [
+      { nom: "Formation d'ingénieur Bac + 5 - Bac général", type: "Formations des écoles d'ingénieurs", apprentissage: false, fiche: 'https://dossierappel.parcoursup.fr/fiche?g_ta_cod=1' },
+      { nom: "Formation d'ingénieur Bac + 5 - en apprentissage", type: "Formations des écoles d'ingénieurs", apprentissage: true },
+    ],
+  },
+};
+
+// [code, nom, population, lat, lon, loyer, bas, haut]
 const COMMUNES = [
-  { code: '69266', nom: 'Villeurbanne', population: 163684, centre: { coordinates: [4.88, 45.78] } },
-  { code: '69034', nom: 'Caluire-et-Cuire', population: 43597, centre: { coordinates: [4.862, 45.797] } },
-  { code: '35238', nom: 'Rennes', population: 227830, centre: { coordinates: [-1.68, 48.11] } },
+  ['69266', 'Villeurbanne', 163684, 45.78, 4.88, 16.8, 13.4, 21.1],
+  ['69034', 'Caluire-et-Cuire', 43597, 45.797, 4.862, 16.7, 13.1, 21.3],
+  ['35238', 'Rennes', 227830, 48.11, -1.68, 14.9, 12, 18.4],
 ];
 
-const RENTS_CSV = [
-  '"id_zone";"INSEE_C";"LIBGEO";"EPCI";"DEP";"REG";"loypredm2";"lwr.IPm2";"upr.IPm2"',
-  '"1";"69266";"Villeurbanne";"";"69";"84";16,8;13,4;21,1',
-  '"2";"69034";"Caluire-et-Cuire";"";"69";"84";16,7;13,1;21,3',
-  '"3";"35238";"Rennes";"";"35";"53";14,9;12,0;18,4',
-].join('\n');
+const META = {
+  generatedAt: '2026-10-26T05:00:00.000Z',
+  parcoursup: { year: 2026, processed: '2026-10-22T05:43:07+00:00', url: 'https://data.enseignementsup-recherche.gouv.fr/' },
+  rents: { year: 2025, url: 'https://static.data.gouv.fr/loyers.csv', datasetUrl: 'https://www.data.gouv.fr/' },
+  communes: { url: 'https://geo.api.gouv.fr/' },
+};
 
 const PLACES = {
   type: 'FeatureCollection',
@@ -132,15 +119,23 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
     (route) => route.fulfill({ status: 200, contentType: 'image/png', body: EMPTY_PNG })
   );
 
+  // Données préparées (public/data), servies par l'application
   await page.route(
-    (url) => url.hostname === 'data.enseignementsup-recherche.gouv.fr',
+    (url) => ['localhost', '127.0.0.1'].includes(url.hostname) && url.pathname.includes('/data/'),
     (route) => {
-      if (failures > 0) {
-        failures--;
-        return route.fulfill({ status: 500, body: 'Erreur simulée' });
+      const path = new URL(route.request().url()).pathname.split('/data/')[1];
+      if (path === 'etablissements.json') {
+        if (failures > 0) {
+          failures--;
+          return route.fulfill({ status: 500, body: 'Erreur simulée' });
+        }
+        return json(route, ETABLISSEMENTS);
       }
-      const offset = Number(new URL(route.request().url()).searchParams.get('offset') ?? 0);
-      return json(route, { total_count: ETABLISSEMENTS.length, results: offset === 0 ? ETABLISSEMENTS : [] });
+      if (path === 'communes.json') return json(route, COMMUNES);
+      if (path === 'meta.json') return json(route, META);
+      const prefix = /^formations\/(\w+)\.json$/.exec(path)?.[1];
+      if (prefix) return json(route, FORMATIONS[prefix] ?? {});
+      return route.fulfill({ status: 404 });
     }
   );
 
@@ -161,23 +156,13 @@ export const mockApis = async (page: Page, options: MockOptions = {}) => {
   );
 
   await page.route(
-    (url) => url.hostname === 'geo.api.gouv.fr' && url.pathname === '/communes',
-    (route) => json(route, COMMUNES)
-  );
-
-  await page.route(
     (url) => url.hostname === 'geo.api.gouv.fr' && url.pathname.startsWith('/communes/'),
     (route) => {
       const code = new URL(route.request().url()).pathname.split('/').pop();
-      const commune = COMMUNES.find((c) => c.code === code) ?? COMMUNES[0];
-      const [lon, lat] = commune.centre.coordinates;
+      const commune = COMMUNES.find((c) => c[0] === code) ?? COMMUNES[0];
+      const [lat, lon] = [Number(commune[3]), Number(commune[4])];
       return json(route, { type: 'Feature', properties: { code }, geometry: { type: 'Polygon', coordinates: square(lon, lat, 20) } });
     }
-  );
-
-  await page.route(
-    (url) => url.hostname === 'static.data.gouv.fr',
-    (route) => route.fulfill({ status: 200, contentType: 'text/csv', body: RENTS_CSV })
   );
 
   await page.route(

@@ -20,7 +20,7 @@ test('charge les établissements et les compte par catégorie', async ({ page })
   await page.goto('./');
 
   await expect(legendCount(page, 'Université')).toContainText('4');
-  await expect(legendCount(page, 'École ou institut')).toContainText('2');
+  await expect(legendCount(page, 'École spécialisée')).toContainText('2');
   await expect(page.getByRole('status')).toHaveCount(0);
   await expect(page.getByRole('button', { name: /Groupe de \d+ établissements|UNIVERSITE DE BRETAGNE/ }).first()).toBeVisible();
 });
@@ -94,7 +94,7 @@ test('les filtres géographiques se complètent en cascade, du haut vers le bas'
   await expect(legendCount(page, 'Université')).toContainText('1');
 
   // Changer de région reste possible et retire département et ville incompatibles
-  await region.selectOption('Auvergne - Rhône-Alpes');
+  await region.selectOption('Auvergne-Rhône-Alpes');
   await expect(departement).toHaveValue('');
   await expect(ville).toHaveValue('');
 });
@@ -148,4 +148,38 @@ test('un clic sur le fond de carte ou Échap ferme la fiche', async ({ page }) =
   await expect(filters).toHaveCount(0);
   await page.keyboard.press('Escape');
   await expect(filters).toBeVisible();
+});
+
+test('la fiche liste les formations Parcoursup et le site web', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('./');
+
+  await searchAndPick(page, 'sciences appliquees', /INSTITUT NATIONAL DES SCIENCES APPLIQUEES/);
+  await expect(page.getByText('École spécialisée · Public')).toBeVisible();
+
+  await page.getByText('2 formations sur Parcoursup').click();
+  const formations = page.locator('details').filter({ hasText: '2 formations sur Parcoursup' }).getByRole('listitem');
+  await expect(formations).toHaveCount(2);
+  await expect(formations.nth(1)).toContainText('en apprentissage');
+  await expect(formations.nth(0).getByRole('link', { name: 'Fiche Parcoursup' })).toHaveAttribute(
+    'href',
+    'https://dossierappel.parcoursup.fr/fiche?g_ta_cod=1'
+  );
+
+  await page.getByText("Fiche de l'établissement").click();
+  await expect(page.getByRole('link', { name: 'insa-lyon.fr' })).toHaveAttribute('href', 'https://www.insa-lyon.fr/');
+});
+
+test('le filtre de statut et les sources des données', async ({ page }) => {
+  await mockApis(page);
+  await page.goto('./');
+
+  await page.getByLabel('Statut', { exact: true }).selectOption('prive-contrat');
+  await expect(legendCount(page, 'École spécialisée')).toContainText('1');
+  await expect(legendCount(page, 'Université')).toContainText('0');
+
+  await page.getByText('Sources des données').click();
+  await expect(page.getByRole('link', { name: 'Formations Parcoursup 2026' })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Carte des loyers 2025' })).toBeVisible();
+  await expect(page.getByText('Données préparées le 26 octobre 2026')).toBeVisible();
 });

@@ -4,57 +4,44 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // réimporte un module neuf pour chaque test.
 const load = () => import('./housingFetcher');
 
-const csv = [
-  '"id_zone";"INSEE_C";"LIBGEO";"EPCI";"DEP";"REG";"loypredm2";"lwr.IPm2";"upr.IPm2"',
-  '"1";"69266";"Villeurbanne";"200046977";"69";"84";16,8;13,4;21,1',
-  '"2";"69034";"Caluire-et-Cuire";"200046977";"69";"84";16,7;NA;NA',
-  '"3";"";"Sans code";"";"";"";12,0;10;14',
-  'ligne incomplète',
-].join('\n');
-
-const textResponse = (body: string, ok = true) =>
-  ({ ok, status: ok ? 200 : 503, text: () => Promise.resolve(body), json: () => Promise.resolve(JSON.parse(body)) }) as Response;
+const jsonResponse = (body: unknown, ok = true) =>
+  ({ ok, status: ok ? 200 : 503, json: () => Promise.resolve(body) }) as Response;
 
 beforeEach(() => {
   vi.resetModules();
 });
 
-describe('fetchRents', () => {
-  it('lit le loyer et la fourchette (virgule décimale) par code INSEE', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(textResponse(csv)));
-    const { fetchRents } = await load();
-    const rents = await fetchRents();
-    expect(rents.size).toBe(2);
-    expect(rents.get('69266')).toEqual({ rent: 16.8, low: 13.4, high: 21.1 });
-    expect(rents.get('69034')).toEqual({ rent: 16.7, low: undefined, high: undefined });
+describe('fetchCommunes', () => {
+  it('lit les lignes compactes de communes.json, loyer facultatif', async () => {
+    const rows = [
+      ['69266', 'Villeurbanne', 163684, 45.77, 4.88, 16.8, 13.4, 21.1],
+      ['00000', 'Sans loyer', 10, 45, 5, null, null, null],
+    ];
+    const fetch = vi.fn().mockResolvedValue(jsonResponse(rows));
+    vi.stubGlobal('fetch', fetch);
+    const { fetchCommunes } = await load();
+
+    expect(await fetchCommunes()).toEqual([
+      { code: '69266', nom: 'Villeurbanne', population: 163684, lat: 45.77, lon: 4.88, rent: 16.8, rentLow: 13.4, rentHigh: 21.1 },
+      { code: '00000', nom: 'Sans loyer', population: 10, lat: 45, lon: 5 },
+    ]);
+    expect(fetch.mock.calls[0][0]).toMatch(/data\/communes\.json$/);
   });
 
   it('met le résultat en cache, mais réessaie après un échec', async () => {
-    const fetch = vi.fn().mockResolvedValueOnce(textResponse('', false)).mockResolvedValue(textResponse(csv));
+    const fetch = vi.fn().mockResolvedValueOnce(jsonResponse(null, false)).mockResolvedValue(jsonResponse([]));
     vi.stubGlobal('fetch', fetch);
-    const { fetchRents } = await load();
-    await expect(fetchRents()).rejects.toThrow('HTTP 503');
-    await fetchRents();
-    await fetchRents();
-    expect(fetch).toHaveBeenCalledTimes(2);
-  });
-});
-
-describe('fetchCommunes', () => {
-  it('écarte les communes sans centre et convertit [lon, lat]', async () => {
-    const body = JSON.stringify([
-      { code: '69266', nom: 'Villeurbanne', population: 163684, centre: { coordinates: [4.88, 45.77] } },
-      { code: '00000', nom: 'Sans centre' },
-    ]);
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(textResponse(body)));
     const { fetchCommunes } = await load();
-    expect(await fetchCommunes()).toEqual([{ code: '69266', nom: 'Villeurbanne', population: 163684, lat: 45.77, lon: 4.88 }]);
+    await expect(fetchCommunes()).rejects.toThrow('HTTP 503');
+    await fetchCommunes();
+    await fetchCommunes();
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 });
 
 describe('fetchCommuneContour', () => {
   it('renvoie les anneaux extérieurs d’un multi-polygone en [lat, lon]', async () => {
-    const body = JSON.stringify({
+    const body = {
       type: 'Feature',
       geometry: {
         type: 'MultiPolygon',
@@ -63,8 +50,8 @@ describe('fetchCommuneContour', () => {
           [[[7, 8], [9, 10], [11, 12]]],
         ],
       },
-    });
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(textResponse(body)));
+    };
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(jsonResponse(body)));
     const { fetchCommuneContour } = await load();
     expect(await fetchCommuneContour('69266')).toEqual([
       [[2, 1], [4, 3], [6, 5]],

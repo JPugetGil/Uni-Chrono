@@ -1,53 +1,33 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Etablissement } from '../types/etablissement';
-import { fetchAllEtablissementsData } from '../dataGouvFetcher';
+import { fetchEtablissements } from '../dataFetcher';
 
 export type EtablissementsStatus = 'loading' | 'ready' | 'error';
 
-interface EtablissementsState {
-  status: EtablissementsStatus;
-  data?: Etablissement[];
-  /** Enregistrements lus / total annoncé (indicateur de chargement) */
-  loaded: number;
-  total: number;
-}
-
-const INITIAL_STATE: EtablissementsState = { status: 'loading', loaded: 0, total: 0 };
-
 /**
- * Liste des établissements, chargée une fois au montage, avec progression,
- * état d'erreur et nouvelle tentative.
- * Le service worker (cache data-gouv-api) assure la rapidité des rechargements.
+ * Sites d'enseignement, chargés une fois au montage (un seul fichier statique),
+ * avec état d'erreur et nouvelle tentative.
  */
 export const useEtablissements = () => {
-  const [state, setState] = useState<EtablissementsState>(INITIAL_STATE);
+  const [state, setState] = useState<{ status: EtablissementsStatus; data?: Etablissement[] }>({ status: 'loading' });
   const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     const controller = new AbortController();
-    fetchAllEtablissementsData(
-      (loaded, total) => setState((s) => ({ ...s, loaded, total })),
-      controller.signal
-    )
-      .then((data) => setState({ status: 'ready', data, loaded: data.length, total: data.length }))
+    fetchEtablissements(controller.signal)
+      .then((data) => setState({ status: 'ready', data }))
       .catch((error) => {
         if (controller.signal.aborted) return;
         console.error(error);
-        setState((s) => ({ ...s, status: 'error' }));
+        setState({ status: 'error' });
       });
     return () => controller.abort();
   }, [attempt]);
 
   const retry = useCallback(() => {
-    setState(INITIAL_STATE);
+    setState({ status: 'loading' });
     setAttempt((a) => a + 1);
   }, []);
 
-  return {
-    etablissementsGeoJSON: state.data,
-    status: state.status,
-    loaded: state.loaded,
-    total: state.total,
-    retry,
-  };
+  return { etablissementsGeoJSON: state.data, status: state.status, retry };
 };

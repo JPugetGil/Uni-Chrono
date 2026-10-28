@@ -7,6 +7,7 @@ import { cx } from '../design-system/cx';
 import { HousingStatus } from '../hooks/useHousing';
 import { HousingCommune } from '../utils/housing';
 import { useFormatters } from '../i18n/useFormatters';
+import { useDataMeta } from '../hooks/useDataMeta';
 
 /** Surfaces proposées pour l'estimation mensuelle : studio, T1, T2 */
 const HOUSING_SURFACES = [20, 30, 45];
@@ -37,6 +38,7 @@ const HousingList: React.FC<HousingListProps> = ({
 }) => {
   const { t } = useTranslation();
   const fmt = useFormatters();
+  const rentsYear = useDataMeta()?.rents.year;
   const [showAll, setShowAll] = useState(false);
 
   if (status === 'idle') return null;
@@ -121,7 +123,7 @@ const HousingList: React.FC<HousingListProps> = ({
               {showAll ? t('housing.showLess') : t('housing.showAll', { count: items.length })}
             </Button>
           )}
-          <p className="text-xs text-slate-500">{t('housing.source')}</p>
+          <p className="text-xs text-slate-500">{t('housing.source', { year: rentsYear ?? '' })}</p>
         </>
       )}
     </section>
