@@ -9,11 +9,8 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: [
-        'icons/uni-chrono-192.png',
-        'icons/uni-chrono-512.png',
-        'vite.svg'
-      ],
+      // Icônes générées depuis public/favicon.svg (npm run icons, voir pwa-assets.config.ts)
+      includeAssets: ['favicon.ico', 'favicon.svg', 'apple-touch-icon-180x180.png'],
       manifest: false,
       workbox: {
         // Police : seuls les sous-ensembles latin et latin-ext sont précachés
