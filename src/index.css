@@ -5,8 +5,8 @@
 
   /* Catégories d'établissement : mêmes valeurs que categoryColors (design-system/tokens.ts) */
   --color-cat-university: #2a78d6;
-  --color-cat-grand: #eb6834;
-  --color-cat-school: #1baf7a;
+  --color-cat-school: #eb6834;
+  --color-cat-lycee: #1baf7a;
   --color-cat-other: #898781;
 }
 

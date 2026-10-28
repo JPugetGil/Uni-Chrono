@@ -1,68 +1,61 @@
-import { normalizeText } from '../utils/text';
-
-export interface Etablissements {
-    total_count: number;
-    results: Etablissement[];
-}
-
-export type EtablissementType = string | string[] | null;
-
-export interface Etablissement {
-    siege_lib?: string | null;
-    type_d_etablissement?: EtablissementType;
-    implantation_lib?: string | null;
-    coordonnees: {
-        lon: number;
-        lat: number;
-    };
-    services?: string[] | null;
-    date_ouverture?: string | null;
-    uai?: string | null;
-    ur_lib?: string | null;
-    com_nom?: string | null;
-    dep_nom?: string | null;
-    reg_nom?: string | null;
-    color?: string;
-}
-
-const normalizeLabel = (value?: string | null): string | undefined => {
-    return value ? value.replace(/\s+/g, ' ').trim() || undefined : undefined;
-};
-
-export const getEtablissementName = (etablissement: Etablissement): string => {
-    return (
-        normalizeLabel(etablissement.implantation_lib) ||
-        normalizeLabel(etablissement.siege_lib) ||
-        normalizeLabel(etablissement.ur_lib) ||
-        etablissement.uai ||
-        '—'
-    );
-};
-
-export const getEtablissementTypes = (etablissement: Etablissement): string[] => {
-    const raw = etablissement.type_d_etablissement;
-    if (!raw) return [];
-    return Array.isArray(raw) ? raw : [raw];
-};
-
 /**
- * Regroupement des types du MESR en quatre catégories affichables (couleur du
+ * Catégorie d'un site, déduite des formations qu'il propose (couleur du
  * marqueur, légende) : au-delà de trois teintes, les couleurs ne restent pas
  * distinguables entre toutes les paires.
  */
-export type EtablissementCategory = 'university' | 'grand' | 'school' | 'other';
+export type EtablissementCategory = 'university' | 'school' | 'lycee' | 'other';
 
-export const ETABLISSEMENT_CATEGORIES: EtablissementCategory[] = ['university', 'grand', 'school', 'other'];
+export const ETABLISSEMENT_CATEGORIES: EtablissementCategory[] = ['university', 'school', 'lycee', 'other'];
 
-const categoryOfType = (type: string): EtablissementCategory => {
-    const n = normalizeText(type);
-    if (n.startsWith('grand etablissement')) return 'grand';
-    if (n.startsWith('universite') || n.startsWith('communaute') || n.startsWith('pole de recherche')) return 'university';
-    if (/ecole|institut|ingenieur|architecture/.test(n)) return 'school';
-    return 'other';
-};
+/** Statut de l'établissement (champ « tc » de Parcoursup) */
+export type Statut = 'public' | 'prive-contrat' | 'prive';
 
-export const getEtablissementCategory = (etablissement: Etablissement): EtablissementCategory => {
-    const categories = getEtablissementTypes(etablissement).map(categoryOfType);
-    return ETABLISSEMENT_CATEGORIES.find((c) => categories.includes(c)) ?? 'other';
-};
+export const STATUTS: Statut[] = ['public', 'prive-contrat', 'prive'];
+
+/**
+ * Site d'enseignement : un établissement (UAI) à une adresse, avec ses
+ * formations Parcoursup. Une même UAI peut avoir plusieurs sites (campus).
+ * Produit par scripts/build-data.ts (public/data/etablissements.json).
+ */
+export interface Etablissement {
+  /** Identifiant stable : l'UAI, suivie de la position si l'UAI a plusieurs sites */
+  id: string;
+  uai: string;
+  nom: string;
+  coordonnees: {
+    lat: number;
+    lon: number;
+  };
+  commune: string;
+  departement: string;
+  region: string;
+  statut: Statut;
+  /** Types de formation proposés (BTS, Licence, CPGE…), triés */
+  types: string[];
+  category: EtablissementCategory;
+  /** Nombre de formations sur Parcoursup */
+  formations: number;
+  /** Au moins une formation en apprentissage */
+  apprentissage: boolean;
+  /** Site web de l'établissement */
+  url?: string;
+  /** Couleur d'affichage (catégorie), ajoutée au chargement */
+  color?: string;
+}
+
+/** Formation Parcoursup d'un site (public/data/formations/<préfixe UAI>.json) */
+export interface Formation {
+  nom: string;
+  type: string;
+  apprentissage: boolean;
+  /** Fiche de la formation sur Parcoursup */
+  fiche?: string;
+}
+
+/** Sources et fraîcheur des données préparées (public/data/meta.json) */
+export interface DataMeta {
+  generatedAt: string;
+  parcoursup: { year: number; modified?: string; processed?: string; url: string };
+  rents: { year: number; url: string; datasetUrl: string };
+  communes: { url: string };
+}

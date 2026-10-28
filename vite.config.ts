@@ -18,6 +18,8 @@ export default defineConfig({
       workbox: {
         // Police : seuls les sous-ensembles latin et latin-ext sont précachés
         globPatterns: ['**/*.{js,css,html,svg,png,ico,json,txt}', '**/inter-latin-*.woff2'],
+        // Données (plusieurs Mo) : mises en cache à l'usage, pas à l'installation
+        globIgnores: ['**/data/**'],
         navigateFallback: 'index.html',
         runtimeCaching: [
           {
@@ -32,41 +34,25 @@ export default defineConfig({
             }
           },
           {
-            urlPattern: /^https:\/\/data\.enseignementsup-recherche\.gouv\.fr\/.*/i,
-            handler: 'NetworkFirst',
+            // Données préparées au build (public/data) : servies du cache, rafraîchies en arrière-plan
+            urlPattern: ({ url, sameOrigin }) => sameOrigin && url.pathname.includes('/data/'),
+            handler: 'StaleWhileRevalidate',
             options: {
-              cacheName: 'data-gouv-api',
+              cacheName: 'app-data',
               expiration: {
-                maxEntries: 40,
-                maxAgeSeconds: 60 * 60
+                maxEntries: 150,
+                maxAgeSeconds: 60 * 60 * 24 * 30
               }
             }
           },
           {
-            // Contour d'une commune (surbrillance au survol de la liste des loyers) :
-            // cache dédié, déclaré avant la règle générale pour ne pas évincer la liste des communes
+            // Contour d'une commune (surbrillance au survol de la liste des loyers)
             urlPattern: /^https:\/\/geo\.api\.gouv\.fr\/communes\/\d.*/i,
             handler: 'CacheFirst',
             options: {
               cacheName: 'commune-contours',
               expiration: {
                 maxEntries: 200,
-                maxAgeSeconds: 60 * 60 * 24 * 30
-              },
-              cacheableResponse: {
-                statuses: [0, 200]
-              }
-            }
-          },
-          {
-            // Communes (geo.api.gouv.fr) et CSV des loyers (static.data.gouv.fr) :
-            // volumineux et quasi statiques → CacheFirst longue durée
-            urlPattern: /^https:\/\/(?:geo\.api\.gouv\.fr|static\.data\.gouv\.fr)\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'housing-data',
-              expiration: {
-                maxEntries: 10,
                 maxAgeSeconds: 60 * 60 * 24 * 30
               },
               cacheableResponse: {

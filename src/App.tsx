@@ -24,7 +24,7 @@ import { useMediaQuery, useViewportHeight } from './hooks/useMediaQuery';
 import { usePersistentFlag } from './hooks/usePersistentFlag';
 import { useFormatters } from './i18n/useFormatters';
 import { Place } from './geocodingFetcher';
-import { Etablissement, getEtablissementName } from './types/etablissement';
+import { Etablissement } from './types/etablissement';
 import { Filters, etabId, matchesFilters } from './utils/filters';
 import { boundsOf } from './utils/geo';
 
@@ -46,7 +46,7 @@ function App() {
   const viewportHeight = useViewportHeight();
 
   const { timeInMinutes, setTimeInMinutes, transportMode, setTransportMode } = useUserPreferences();
-  const { etablissementsGeoJSON: etablissements, status: etabStatus, loaded, total, retry } = useEtablissements();
+  const { etablissementsGeoJSON: etablissements, status: etabStatus, retry } = useEtablissements();
   const { isochrones, requestIsochrones, statusById, pendingCount, batchTotal, batchFailed } = useIsochrones(timeInMinutes, transportMode);
 
   // Établissement survolé (marqueur) et sélectionné (clic, recherche)
@@ -257,7 +257,7 @@ function App() {
         showZoomControl={!isMobile}
       />
 
-      <MapStatus status={etabStatus} loaded={loaded} total={total} onRetry={retry} />
+      <MapStatus status={etabStatus} onRetry={retry} />
 
       {isMobile ? (
         <>
@@ -271,7 +271,7 @@ function App() {
               selectedEtab ? (
                 <p className="flex items-center gap-2 text-sm font-semibold text-slate-900">
                   <CategoryDot color={selectedEtab.color || '#898781'} className="size-3" />
-                  <span className="truncate">{getEtablissementName(selectedEtab)}</span>
+                  <span className="truncate">{selectedEtab.nom}</span>
                 </p>
               ) : (
                 <p className="truncate text-sm font-semibold text-slate-900">

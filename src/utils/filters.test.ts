@@ -3,13 +3,18 @@ import { Etablissement } from '../types/etablissement';
 import { countActiveFilters, etabId, matchesFilters } from './filters';
 
 const insa: Etablissement = {
+  id: '0690192J',
   uai: '0690192J',
-  implantation_lib: 'Institut national des sciences appliquées de Lyon',
-  type_d_etablissement: 'Grand établissement',
+  nom: 'Institut national des sciences appliquées de Lyon',
   coordonnees: { lat: 45.78, lon: 4.88 },
-  reg_nom: 'Auvergne - Rhône-Alpes',
-  dep_nom: 'Rhône',
-  com_nom: 'Villeurbanne',
+  commune: 'Villeurbanne',
+  departement: 'Rhône',
+  region: 'Auvergne-Rhône-Alpes',
+  statut: 'public',
+  types: ["Formations des écoles d'ingénieurs", 'Licence'],
+  category: 'school',
+  formations: 4,
+  apprentissage: false,
 };
 
 describe('matchesFilters', () => {
@@ -17,11 +22,13 @@ describe('matchesFilters', () => {
     expect(matchesFilters(insa, {})).toBe(true);
   });
 
-  it('combine les critères géographiques et le type', () => {
-    expect(matchesFilters(insa, { region: 'Auvergne - Rhône-Alpes', departement: 'Rhône', commune: 'Villeurbanne' })).toBe(true);
+  it('combine les critères géographiques, le type de formation et le statut', () => {
+    expect(matchesFilters(insa, { region: 'Auvergne-Rhône-Alpes', departement: 'Rhône', commune: 'Villeurbanne' })).toBe(true);
     expect(matchesFilters(insa, { departement: 'Isère' })).toBe(false);
-    expect(matchesFilters(insa, { type: 'Grand établissement' })).toBe(true);
-    expect(matchesFilters(insa, { type: 'Université' })).toBe(false);
+    expect(matchesFilters(insa, { type: 'Licence' })).toBe(true);
+    expect(matchesFilters(insa, { type: 'BTS - BTSA - BTSM' })).toBe(false);
+    expect(matchesFilters(insa, { statut: 'public' })).toBe(true);
+    expect(matchesFilters(insa, { statut: 'prive' })).toBe(false);
   });
 
   it('filtre le nom sans accents et mot par mot', () => {
@@ -29,16 +36,12 @@ describe('matchesFilters', () => {
     expect(matchesFilters(insa, { name: 'lyon institut' })).toBe(true);
     expect(matchesFilters(insa, { name: 'sorbonne' })).toBe(false);
   });
-
-  it('accepte un type multiple', () => {
-    expect(matchesFilters({ ...insa, type_d_etablissement: ['Université', 'Grand établissement'] }, { type: 'Université' })).toBe(true);
-  });
 });
 
 describe('etabId', () => {
-  it('utilise l’UAI, sinon les coordonnées', () => {
+  it('renvoie l’identifiant du site', () => {
     expect(etabId(insa)).toBe('0690192J');
-    expect(etabId({ ...insa, uai: null })).toBe('45.78,4.88');
+    expect(etabId({ ...insa, id: '0690192J@45.78,4.88' })).toBe('0690192J@45.78,4.88');
   });
 });
 

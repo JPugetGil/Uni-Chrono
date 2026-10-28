@@ -3,7 +3,7 @@ import { Marker, Popup, Tooltip, useMap, useMapEvents } from 'react-leaflet';
 import * as L from 'leaflet';
 import Supercluster from 'supercluster';
 import { useTranslation } from 'react-i18next';
-import { Etablissement, getEtablissementName } from '../types/etablissement';
+import { Etablissement } from '../types/etablissement';
 import { etabId } from '../utils/filters';
 import { CategoryDot } from './Legend';
 
@@ -113,7 +113,7 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablisseme
 
   const renderPoint = (e: Etablissement, isSelected: boolean) => {
     const id = etabId(e);
-    const name = getEtablissementName(e);
+    const name = e.nom;
     return (
       <Marker
         key={id}
@@ -129,7 +129,7 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablisseme
       >
         <Tooltip direction="top" offset={[0, -10]}>
           <strong>{name}</strong>
-          {e.com_nom && <div>{e.com_nom}</div>}
+          {e.commune && <div>{e.commune}</div>}
         </Tooltip>
       </Marker>
     );
@@ -184,7 +184,7 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablisseme
                     className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-left text-sm text-slate-800 hover:bg-slate-100"
                   >
                     <CategoryDot color={e.color || '#898781'} />
-                    <span>{getEtablissementName(e)}</span>
+                    <span>{e.nom}</span>
                   </button>
                 </li>
               );

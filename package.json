@@ -4,7 +4,9 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
+    "predev": "node scripts/build-data.ts --if-missing",
     "dev": "vite",
+    "data": "node scripts/build-data.ts",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
@@ -48,5 +50,8 @@
   },
   "overrides": {
     "sharp": "^0.35.3"
+  },
+  "engines": {
+    "node": ">=22.18"
   }
 }

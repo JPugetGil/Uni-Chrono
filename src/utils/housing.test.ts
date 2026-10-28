@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { CommuneInfo, RentInfo } from '../housingFetcher';
+import { CommuneInfo } from '../types/commune';
 import { Coordinate } from '../types/isochrone';
 import { communesInIsochrone, medianRent } from './housing';
 
@@ -13,32 +13,28 @@ const zone: Coordinate[] = [
 
 const communes: CommuneInfo[] = [
   // centre dans la zone
-  { code: '69266', nom: 'Villeurbanne', population: 160000, lat: 45.78, lon: 4.88 },
+  { code: '69266', nom: 'Villeurbanne', population: 160000, lat: 45.78, lon: 4.88, rent: 16.8, rentLow: 13.4, rentHigh: 21.1 },
   // centre hors zone mais le plus proche du coin nord-ouest
-  { code: '69034', nom: 'Caluire-et-Cuire', population: 43000, lat: 45.795, lon: 4.865 },
+  { code: '69034', nom: 'Caluire-et-Cuire', population: 43000, lat: 45.795, lon: 4.865, rent: 16.7 },
   // loin : ni dedans ni le plus proche d'un sommet
-  { code: '69123', nom: 'Lyon', population: 520000, lat: 45.6, lon: 4.6 },
+  { code: '69381', nom: 'Lyon 1er Arrondissement', population: 30000, lat: 45.6, lon: 4.6, rent: 19 },
 ];
-
-const rents = new Map<string, RentInfo>([
-  ['69266', { rent: 16.8, low: 13.4, high: 21.1 }],
-  ['69034', { rent: 16.7 }],
-]);
 
 describe('communesInIsochrone', () => {
   it('retient les centres inclus et les communes les plus proches des sommets', () => {
-    const items = communesInIsochrone(zone, communes, rents);
+    const items = communesInIsochrone(zone, communes);
     expect(items.map((c) => c.code).sort()).toEqual(['69034', '69266']);
   });
 
   it('trie par loyer croissant et reporte la fourchette', () => {
-    const items = communesInIsochrone(zone, communes, rents);
+    const items = communesInIsochrone(zone, communes);
     expect(items.map((c) => c.nom)).toEqual(['Caluire-et-Cuire', 'Villeurbanne']);
     expect(items[1]).toMatchObject({ rent: 16.8, rentLow: 13.4, rentHigh: 21.1 });
   });
 
   it('place les communes sans loyer en dernier, par population décroissante', () => {
-    const items = communesInIsochrone(zone, communes, new Map([['69034', { rent: 15 }]]));
+    const withoutRent = communes.map((c) => (c.code === '69034' ? { ...c, rent: 15 } : { ...c, rent: undefined }));
+    const items = communesInIsochrone(zone, withoutRent);
     expect(items.map((c) => c.nom)).toEqual(['Caluire-et-Cuire', 'Villeurbanne']);
     expect(items[1].rent).toBeUndefined();
   });

@@ -1,19 +1,8 @@
-import { CommuneInfo, RentInfo } from '../housingFetcher';
+import { CommuneInfo } from '../types/commune';
 import { IsochroneCoordinates, flattenCoordinates, isPointInIsochrone } from './geo';
 
-export interface HousingCommune {
-  code: string;
-  nom: string;
-  population: number;
-  /** Centre de la commune */
-  lat: number;
-  lon: number;
-  /** Loyer d'annonce prédit en €/m² charges comprises (appartement 1-2 pièces), si connu */
-  rent?: number;
-  /** Intervalle de prédiction du loyer en €/m² */
-  rentLow?: number;
-  rentHigh?: number;
-}
+/** Commune de la zone, avec son loyer */
+export type HousingCommune = CommuneInfo;
 
 /**
  * Communes couvertes par une isochrone, avec loyer €/m², triées du loyer le
@@ -23,8 +12,7 @@ export interface HousingCommune {
  */
 export const communesInIsochrone = (
   coordinates: IsochroneCoordinates,
-  communes: CommuneInfo[],
-  rents: Map<string, RentInfo>
+  communes: CommuneInfo[]
 ): HousingCommune[] => {
   // Communes couvertes par l'isochrone (codes INSEE).
   const covered = new Set<string>();
@@ -79,19 +67,6 @@ export const communesInIsochrone = (
 
   return communes
     .filter((c) => covered.has(c.code))
-    .map((c) => {
-      const info = rents.get(c.code);
-      return {
-        code: c.code,
-        nom: c.nom,
-        population: c.population,
-        lat: c.lat,
-        lon: c.lon,
-        rent: info?.rent,
-        rentLow: info?.low,
-        rentHigh: info?.high,
-      };
-    })
     .sort((a, b) => (a.rent ?? Infinity) - (b.rent ?? Infinity) || b.population - a.population);
 };
 
