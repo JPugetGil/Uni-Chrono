@@ -7,10 +7,10 @@ interface OnboardingProps {
   onDismiss: () => void;
 }
 
-/** Aide au premier usage : les trois gestes de l'application. */
+/** Aide au premier usage : chercher une école, voir sa zone accessible. */
 const Onboarding: React.FC<OnboardingProps> = ({ onDismiss }) => {
   const { t } = useTranslation();
-  const steps = [t('onboarding.step1'), t('onboarding.step2'), t('onboarding.step3')];
+  const steps = [t('onboarding.step1'), t('onboarding.step2')];
 
   return (
     <section aria-labelledby="onboarding-title" className="relative rounded-xl bg-blue-50 p-3 ring-1 ring-blue-100">

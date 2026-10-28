@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { fetchTransitIsochrone } from './geoapifyFetcher';
+import { fetchGeoapifyIsochrone } from './geoapifyFetcher';
 
 const response = (status: number, body: unknown) =>
   ({ ok: status < 400, status, headers: new Headers(), json: () => Promise.resolve(body) }) as Response;
@@ -26,12 +26,12 @@ afterEach(() => {
   vi.useRealTimers();
 });
 
-describe('fetchTransitIsochrone', () => {
+describe('fetchGeoapifyIsochrone', () => {
   it('demande toutes les durées en une requête et renvoie des bandes triées, îlots compris', async () => {
     const fetch = vi.fn().mockResolvedValue(response(200, isolines));
     vi.stubGlobal('fetch', fetch);
 
-    const bands = await fetchTransitIsochrone(45.7, 4.8, [10, 5]);
+    const bands = await fetchGeoapifyIsochrone(45.7, 4.8, [10, 5], 'transit');
 
     const url = new URL(fetch.mock.calls[0][0]);
     expect(Object.fromEntries(url.searchParams)).toEqual({
@@ -47,7 +47,18 @@ describe('fetchTransitIsochrone', () => {
     expect(bands[1].coordinates[0]).toEqual([[45.7, 4.8], [45.7, 4.81], [45.71, 4.81]]);
   });
 
-  it('interroge de nouveau avec l’identifiant tant que le calcul est en cours (202)', async () => {
+  it('demande le vélo en mode « bicycle »', async () => {
+    const fetch = vi.fn().mockResolvedValue(response(200, isolines));
+    vi.stubGlobal('fetch', fetch);
+
+    await fetchGeoapifyIsochrone(45.7, 4.8, [15], 'cycling');
+
+    const params = new URL(fetch.mock.calls[0][0]).searchParams;
+    expect(params.get('mode')).toBe('bicycle');
+    expect(params.get('range')).toBe('900');
+  });
+
+  it('interroge de nouveau avec l’identifiant tant que le calcul est en cours (202), à intervalles croissants', async () => {
     vi.useFakeTimers();
     const fetch = vi
       .fn()
@@ -56,8 +67,15 @@ describe('fetchTransitIsochrone', () => {
       .mockResolvedValue(response(200, isolines));
     vi.stubGlobal('fetch', fetch);
 
-    const pending = fetchTransitIsochrone(45.7, 4.8, [5, 10]);
-    await vi.runAllTimersAsync();
+    const pending = fetchGeoapifyIsochrone(45.7, 4.8, [5, 10], 'transit');
+    // Chaque interrogation coûte un crédit : 2 s, puis 3 s
+    await vi.advanceTimersByTimeAsync(1999);
+    expect(fetch).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(2999);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    await vi.advanceTimersByTimeAsync(1);
     const bands = await pending;
 
     expect(fetch).toHaveBeenCalledTimes(3);
@@ -69,7 +87,7 @@ describe('fetchTransitIsochrone', () => {
     const fetch = vi.fn().mockResolvedValue(response(401, { message: 'Invalid apiKey' }));
     vi.stubGlobal('fetch', fetch);
 
-    await expect(fetchTransitIsochrone(45.7, 4.8, [15])).rejects.toMatchObject({ kind: 'auth' });
+    await expect(fetchGeoapifyIsochrone(45.7, 4.8, [15], 'cycling')).rejects.toMatchObject({ kind: 'auth' });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 });

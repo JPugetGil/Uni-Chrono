@@ -12,7 +12,6 @@ interface EtablissementMarkersProps {
   etablissements: Etablissement[];
   /** Établissement sélectionné : toujours affiché, hors regroupement, même s'il est filtré */
   selected: Etablissement | null;
-  onHover: (id: string | null) => void;
   onSelect: (id: string | null) => void;
 }
 
@@ -74,7 +73,7 @@ const viewOf = (map: L.Map) => {
  * proche, un point coloré par catégorie sinon. Un groupe d'établissements
  * situés au même endroit ouvre la liste au lieu de zoomer.
  */
-const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablissements, selected, onHover, onSelect }) => {
+const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablissements, selected, onSelect }) => {
   const { t } = useTranslation();
   const map = useMap();
   const [view, setView] = useState(() => viewOf(map));
@@ -122,8 +121,6 @@ const EtablissementMarkers: React.FC<EtablissementMarkersProps> = ({ etablisseme
         zIndexOffset={isSelected ? 1000 : 0}
         eventHandlers={{
           add: setAriaLabel(name),
-          mouseover: () => onHover(id),
-          mouseout: () => onHover(null),
           click: () => onSelect(id),
         }}
       >
