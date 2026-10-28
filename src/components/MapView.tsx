@@ -30,9 +30,20 @@ const TRANSPORT_OVERLAYS: Partial<Record<TransportMode, { url: string; attributi
 /** Vue initiale : France métropolitaine, cadrée dans la partie non couverte par les panneaux */
 const FRANCE_BOUNDS: [[number, number], [number, number]] = [[41.3, -5.2], [51.1, 9.6]];
 
-/** Clic sur le fond de carte (hors marqueurs et contrôles) */
+/**
+ * Clic sur le fond de carte (hors marqueurs et contrôles). Leaflet traite le
+ * clic après React : un bouton d'infobulle que React vient de retirer du DOM
+ * n'est plus reconnu comme exclu et Leaflet signale un clic sur la carte.
+ * Une cible détachée ou située dans une infobulle ou un contrôle est ignorée.
+ */
 const MapClickHandler: React.FC<{ onClick: () => void }> = ({ onClick }) => {
-  useMapEvents({ click: onClick });
+  useMapEvents({
+    click: (e) => {
+      const target = e.originalEvent.target as Element | null;
+      if (!target?.isConnected || target.closest('.leaflet-popup, .leaflet-control')) return;
+      onClick();
+    },
+  });
   return null;
 };
 

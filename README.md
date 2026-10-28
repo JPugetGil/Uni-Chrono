@@ -1,43 +1,48 @@
 ## Uni-Chrono
 
-Uni-Chrono is a web application for visualizing isochrones for higher-education institutions in France. It displays universities/schools on a map, and for each one a polygon representing the area reachable in X minutes for a given mode of transport.
+Uni-Chrono shows French higher-education institutions on a map and, for each one, the area you can reach within a given time on foot, by bike or by car (an isochrone), with the rents of the municipalities in that area.
 
-**🌍 Available in French and English** - The application supports internationalization (i18n) with language switching between French and English.
+**Available in French and English.** Deployed on GitHub Pages: https://jpugetgil.github.io/Uni-Chrono/
 
-### What the application does
+### Features
 
-- Fetches the list of higher-education institutions (France) from the MESR open data platform.
-- Displays each institution as a marker on a map (OpenStreetMap via Leaflet).
-- Computes and draws, for each institution, an isochrone (reachable area) based on:
-  - the selected time (in minutes),
-  - the mode of transport (walking, cycling, driving).
-- Updates the map live when you change the time or transport mode.
-- Shows a progress bar indicating how many isochrones have been computed out of the total.
-- Caches institutions and isochrones in local storage (localStorage) to speed up subsequent loads. (1 hour expiration)
-- Provides a filter panel to search institutions by name, type, region, department, or commune.
-- **Supports language switching (FR/EN)** with automatic browser language detection and localStorage persistence.
+- Map of higher-education sites, grouped into clusters and coloured by category (university, grand établissement, school or institute, other).
+- One search box for institutions, cities and addresses; cascading region → department → city filters.
+- Isochrones on demand, for the selected institution or for every institution in view, with time bands (for example 5, 10 and 15 minutes).
+- For each reachable area: surface, municipalities, median rent, and a list of municipalities with their advertised rent per m² and an estimated monthly rent.
+- Desktop side panel, mobile bottom sheet; installable as a PWA.
 
-### Data and services used
+### Data and services
 
-- Institutions data: dataset "fr-esr-principaux-etablissements-enseignement-superieur" (data.enseignementsup-recherche.gouv.fr), filtered to France.
-- Isochrone computation: Mapbox Isochrone API (supported profiles: walking, cycling, driving). A Mapbox token (VITE_MAPBOX_API_KEY) is required.
-- Basemap: OpenStreetMap tiles, rendered via React-Leaflet.
+| What | Source | Key |
+|------|--------|-----|
+| Institutions | MESR open data, dataset `fr-esr-implantations_etablissements_d_enseignement_superieur_publics` | none |
+| Isochrones (walking, cycling, driving) | Mapbox Isochrone API | `VITE_MAPBOX_API_KEY` |
+| Isochrones (public transport, optional) | Navitia | `VITE_NAVITIA_API_KEY` |
+| Address search | Géoplateforme geocoding (IGN) | none |
+| Municipalities and contours | geo.api.gouv.fr | none |
+| Rents | "Carte des loyers" (ANIL), data.gouv.fr | none |
+| Basemap | OpenStreetMap tiles via Leaflet | none |
 
-## Start the project (How to run)
+API keys are embedded in the built JavaScript and are therefore public. Restrict them to the site's URL in the provider's dashboard (Mapbox: token URL restrictions).
 
-Prerequisites:
-- Node.js LTS (18+ recommended)
-- A valid Mapbox token for the Isochrone API
+### Run locally
 
-Environment setup:
-1. Create a `.env` file at the project root (or `.env.local`) and add your key: `VITE_MAPBOX_API_KEY=pk.XXXXXXXXXXXX`
-2. Check `vite.config.ts`: the field `base: '/Uni-Chrono/'` is suited for GitHub Pages deployment under the `Uni-Chrono` repo. Locally, it works as is.
+Prerequisites: Node.js LTS (22 or later) and a Mapbox token.
 
-Install and run locally:
-1. Install dependencies: `npm install`
-2. Start the development server: `npm run dev`
-3. Open the URL printed by Vite (typically http://localhost:5173).
+1. `cp .env.example .env` and fill in `VITE_MAPBOX_API_KEY`.
+2. `npm install`
+3. `npm run dev`, then open the URL printed by Vite (the app is served under `/Uni-Chrono/`).
 
-Production build and preview:
-1. Build the project: `npm run build`
-2. Preview the build: `npm run preview`
+`npm run build` builds the production bundle into `dist/`; `npm run preview` serves it.
+
+### Tests
+
+- `npm test`: unit tests (Vitest) for the geometry, filters, housing and API helpers.
+- `npm run test:e2e`: browser tests (Playwright) on the production build, with every external service mocked (`e2e/mocks.ts`). Install the browser once with `npx playwright install chromium`.
+- `npm run lint`: ESLint.
+
+### Continuous integration and deployment
+
+- `.github/workflows/ci.yml` runs lint, unit tests, build and browser tests on every pull request.
+- `.github/workflows/deploy-pages.yml` runs lint and unit tests, then builds and deploys `main` to GitHub Pages. Set the `VITE_MAPBOX_API_KEY` repository secret.

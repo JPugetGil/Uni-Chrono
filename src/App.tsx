@@ -6,6 +6,7 @@ import MapStatus from './components/MapStatus';
 import SearchBox from './components/SearchBox';
 import ExplorePanel from './components/ExplorePanel';
 import EtablissementDetails from './components/EtablissementDetails';
+import TravelSettings from './components/TravelSettings';
 import BottomSheet, { SheetSnap } from './components/BottomSheet';
 import Brand from './components/Brand';
 import LanguageSwitcher from './components/LanguageSwitcher';
@@ -193,6 +194,15 @@ function App() {
     </div>
   );
 
+  const travelSettings = (
+    <TravelSettings
+      timeInMinutes={timeInMinutes}
+      onTimeChange={setTimeInMinutes}
+      transportMode={transportMode}
+      onTransportModeChange={setTransportMode}
+    />
+  );
+
   const panelContent = selectedEtab ? (
     <EtablissementDetails
       key={selectedEtabId}
@@ -206,6 +216,7 @@ function App() {
       pinnedCommune={pinnedCommune}
       onPinCommune={setPinnedCommune}
       onHoverCommune={setHoveredCommune}
+      travelSettings={travelSettings}
     />
   ) : (
     <ExplorePanel
@@ -213,10 +224,7 @@ function App() {
       onboardingVisible={!onboardingDone}
       onDismissOnboarding={() => setOnboardingDone(true)}
       onShowHelp={() => setOnboardingDone(false)}
-      timeInMinutes={timeInMinutes}
-      onTimeChange={setTimeInMinutes}
-      transportMode={transportMode}
-      onTransportModeChange={setTransportMode}
+      travelSettings={travelSettings}
       etablissements={etablissements}
       filteredEtablissements={filteredEtablissements}
       filters={filters}

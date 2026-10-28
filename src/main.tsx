@@ -7,6 +7,7 @@ import './i18n/config'
 import './leaflet-marker-config.ts'
 import './index.css'
 import App from './App.tsx'
+import ErrorBoundary from './components/ErrorBoundary.tsx'
 
 // Purge des données mises en cache par les anciennes versions (le cache
 // localStorage des établissements/isochrones a été supprimé de l'app)
@@ -25,7 +26,9 @@ try {
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <App />
+    <ErrorBoundary>
+      <App />
+    </ErrorBoundary>
   </StrictMode>,
 )
 
