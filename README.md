@@ -54,7 +54,7 @@ Prerequisites: Node.js 22.18 or later (the data script is TypeScript run directl
 2. `npm install`
 3. `npm run dev`, then open the URL printed by Vite (the app is served under `/Uni-Chrono/`). The first run prepares the data (`npm run data`, about 10 seconds); run `npm run data` again to refresh it.
 
-`npm run build` builds the production bundle into `dist/`; `npm run preview` serves it.
+`npm run build` builds the production bundle into `dist/`; `npm run preview` serves it. `npm run icons` regenerates the favicon, PWA, maskable and Apple icons from `public/favicon.svg`.
 
 ### Tests
 
