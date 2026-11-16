@@ -14,6 +14,7 @@ import { existsSync } from 'node:fs';
 import { mkdir, rm, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { DataMeta } from '../src/types/etablissement.ts';
+import { fetchWithRetry } from './retryFetch.ts';
 import {
   type DataGouvDataset,
   type CrousLogementRaw,
@@ -43,13 +44,13 @@ const RENTS_SEARCH = "https://www.data.gouv.fr/api/1/datasets/?q=carte%20des%20l
 const MINIMUMS = { etablissements: 4000, communes: 30000, rents: 30000, crousLogements: 400, crousRestaurants: 400 };
 
 const getJson = async <T>(url: string): Promise<T> => {
-  const response = await fetch(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) throw new Error(`HTTP ${response.status} pour ${url}`);
   return (await response.json()) as T;
 };
 
 const getText = async (url: string): Promise<string> => {
-  const response = await fetch(url);
+  const response = await fetchWithRetry(url);
   if (!response.ok) throw new Error(`HTTP ${response.status} pour ${url}`);
   // CSV encodé en Latin-1 : seuls les codes et les nombres sont lus
   return new TextDecoder('latin1').decode(await response.arrayBuffer());
